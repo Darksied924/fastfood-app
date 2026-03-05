@@ -384,6 +384,368 @@ const resolveRange = ({ startDate, endDate, preset = '' }) => {
 };
 
 const toNumber = (value) => Number(value || 0);
+const DELIVERY_ON_TIME_TARGET_MINUTES = 45;
+const DELIVERY_POTENTIAL_MISS_THRESHOLD_MINUTES = 120;
+
+// @desc    Get delivery dashboard data (delivery role)
+// @route   GET /api/orders/delivery/dashboard
+const getDeliveryDashboard = asyncHandler(async (req, res) => {
+  const deliveryId = req.user.id;
+  const search = String(req.query.search || '').trim();
+  const compareBy = String(req.query.compareBy || 'weekly').toLowerCase() === 'monthly'
+    ? 'monthly'
+    : 'weekly';
+  const commissionRate = Number(req.query.commissionRate);
+  const hasCommissionRate = Number.isFinite(commissionRate) && commissionRate > 0;
+  const normalizedCommissionRate = hasCommissionRate ? Math.min(commissionRate, 100) : 0;
+  const hasDateFilter =
+    Boolean(req.query.startDate) ||
+    Boolean(req.query.endDate) ||
+    Boolean(req.query.preset);
+  const range = hasDateFilter
+    ? resolveRange({
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
+      preset: req.query.preset || ''
+    })
+    : {
+      start: new Date(0),
+      end: new Date(),
+      startSql: '1970-01-01 00:00:00',
+      endSql: toSqlDateTime(new Date())
+    };
+
+  const assignedOrders = await db.query(
+    `
+      SELECT
+        o.id,
+        u.name AS customer_name,
+        COALESCE(NULLIF(TRIM(o.phone), ''), 'N/A') AS address,
+        o.total,
+        o.updated_at AS assigned_at,
+        o.status,
+        o.created_at,
+        o.updated_at
+      FROM orders o
+      JOIN users u ON u.id = o.user_id
+      WHERE o.delivery_id = ?
+        AND o.status = 'out_for_delivery'
+      ORDER BY o.updated_at DESC
+    `,
+    [deliveryId]
+  );
+
+  const deliveredOrders = await db.query(
+    `
+      SELECT
+        o.id,
+        u.name AS customer_name,
+        COALESCE(NULLIF(TRIM(o.phone), ''), 'N/A') AS address,
+        o.total,
+        COALESCE(o.manager_read_at, o.created_at) AS assigned_at,
+        o.updated_at AS delivered_at,
+        TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at) AS delivery_duration_minutes,
+        o.status
+      FROM orders o
+      JOIN users u ON u.id = o.user_id
+      WHERE o.delivery_id = ?
+        AND o.status = 'delivered'
+        AND o.updated_at BETWEEN ? AND ?
+        AND (? = '' OR CAST(o.id AS CHAR) LIKE ? OR u.name LIKE ?)
+      ORDER BY o.updated_at DESC
+      LIMIT 250
+    `,
+    [
+      deliveryId,
+      range.startSql,
+      range.endSql,
+      search,
+      `%${search}%`,
+      `%${search}%`
+    ]
+  );
+
+  const metricRows = await db.query(
+    `
+      SELECT
+        (SELECT COUNT(*) FROM orders WHERE delivery_id = ? AND status = 'delivered') AS total_deliveries_all_time,
+        (SELECT COUNT(*) FROM orders WHERE delivery_id = ? AND status = 'delivered' AND DATE(updated_at) = CURDATE()) AS deliveries_today,
+        (SELECT COUNT(*) FROM orders WHERE delivery_id = ? AND status = 'delivered' AND YEARWEEK(updated_at, 1) = YEARWEEK(CURDATE(), 1)) AS deliveries_this_week,
+        (SELECT COUNT(*) FROM orders WHERE delivery_id = ? AND status = 'delivered' AND YEAR(updated_at) = YEAR(CURDATE()) AND MONTH(updated_at) = MONTH(CURDATE())) AS deliveries_this_month,
+        (SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, created_at, updated_at)), 0) FROM orders WHERE delivery_id = ? AND status = 'delivered') AS avg_delivery_time_minutes,
+        (SELECT COALESCE(MIN(TIMESTAMPDIFF(MINUTE, created_at, updated_at)), 0) FROM orders WHERE delivery_id = ? AND status = 'delivered') AS fastest_delivery_time_minutes,
+        (
+          SELECT COALESCE(
+            (
+              SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) <= ? THEN 1 ELSE 0 END)
+              / NULLIF(COUNT(*), 0)
+            ) * 100,
+            0
+          )
+          FROM orders
+          WHERE delivery_id = ? AND status = 'delivered'
+        ) AS on_time_rate,
+        (SELECT COUNT(*) FROM orders WHERE delivery_id = ? AND status = 'delivered' AND updated_at BETWEEN ? AND ?) AS range_deliveries,
+        (SELECT COALESCE(SUM(total), 0) FROM orders WHERE delivery_id = ? AND status = 'delivered' AND updated_at BETWEEN ? AND ?) AS range_sales
+    `,
+    [
+      deliveryId,
+      deliveryId,
+      deliveryId,
+      deliveryId,
+      deliveryId,
+      deliveryId,
+      DELIVERY_ON_TIME_TARGET_MINUTES,
+      deliveryId,
+      deliveryId,
+      range.startSql,
+      range.endSql,
+      deliveryId,
+      range.startSql,
+      range.endSql
+    ]
+  );
+
+  const trendRows = await db.query(
+    `
+      SELECT
+        DATE(updated_at) AS day,
+        DATE_FORMAT(updated_at, '%Y-%m-%d') AS label,
+        COUNT(*) AS deliveries
+      FROM orders
+      WHERE delivery_id = ?
+        AND status = 'delivered'
+        AND updated_at BETWEEN ? AND ?
+      GROUP BY day, label
+      ORDER BY day ASC
+    `,
+    [deliveryId, range.startSql, range.endSql]
+  );
+
+  const comparisonRows = compareBy === 'monthly'
+    ? await db.query(
+      `
+        SELECT
+          DATE_FORMAT(updated_at, '%Y-%m') AS bucket_key,
+          DATE_FORMAT(updated_at, '%b %Y') AS label,
+          COUNT(*) AS deliveries
+        FROM orders
+        WHERE delivery_id = ?
+          AND status = 'delivered'
+          AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+        GROUP BY bucket_key, label
+        ORDER BY bucket_key ASC
+      `,
+      [deliveryId]
+    )
+    : await db.query(
+      `
+        SELECT
+          YEARWEEK(updated_at, 1) AS bucket_key,
+          CONCAT('W', LPAD(WEEK(updated_at, 1), 2, '0'), ' ', YEAR(updated_at)) AS label,
+          COUNT(*) AS deliveries
+        FROM orders
+        WHERE delivery_id = ?
+          AND status = 'delivered'
+          AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 12 WEEK)
+        GROUP BY bucket_key, label
+        ORDER BY bucket_key ASC
+      `,
+      [deliveryId]
+    );
+
+  const pieRows = await db.query(
+    `
+      SELECT
+        SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) <= ? THEN 1 ELSE 0 END) AS on_time,
+        SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) > ? THEN 1 ELSE 0 END) AS late
+      FROM orders
+      WHERE delivery_id = ?
+        AND status = 'delivered'
+        AND updated_at BETWEEN ? AND ?
+    `,
+    [
+      DELIVERY_ON_TIME_TARGET_MINUTES,
+      DELIVERY_ON_TIME_TARGET_MINUTES,
+      deliveryId,
+      range.startSql,
+      range.endSql
+    ]
+  );
+
+  const durationTrendRows = await db.query(
+    `
+      SELECT
+        DATE(updated_at) AS day,
+        DATE_FORMAT(updated_at, '%Y-%m-%d') AS label,
+        COALESCE(AVG(TIMESTAMPDIFF(MINUTE, created_at, updated_at)), 0) AS avg_minutes
+      FROM orders
+      WHERE delivery_id = ?
+        AND status = 'delivered'
+        AND updated_at BETWEEN ? AND ?
+      GROUP BY day, label
+      ORDER BY day ASC
+    `,
+    [deliveryId, range.startSql, range.endSql]
+  );
+
+  const peakHoursRows = await db.query(
+    `
+      SELECT
+        HOUR(updated_at) AS hour_of_day,
+        COUNT(*) AS deliveries
+      FROM orders
+      WHERE delivery_id = ?
+        AND status = 'delivered'
+      GROUP BY hour_of_day
+      ORDER BY deliveries DESC, hour_of_day ASC
+      LIMIT 5
+    `,
+    [deliveryId]
+  );
+
+  const missedRows = await db.query(
+    `
+      SELECT
+        SUM(
+          CASE
+            WHEN status = 'out_for_delivery'
+              AND TIMESTAMPDIFF(MINUTE, COALESCE(manager_read_at, created_at), NOW()) > ?
+            THEN 1 ELSE 0
+          END
+        ) AS potentially_missed,
+        SUM(
+          CASE
+            WHEN status IN ('pending', 'paid', 'preparing')
+            THEN 1 ELSE 0
+          END
+        ) AS reassigned_or_returned
+      FROM orders
+      WHERE delivery_id = ?
+    `,
+    [DELIVERY_POTENTIAL_MISS_THRESHOLD_MINUTES, deliveryId]
+  );
+
+  const rankingRows = await db.query(
+    `
+      SELECT
+        performance.delivery_id,
+        performance.name,
+        performance.total_deliveries,
+        performance.avg_delivery_minutes,
+        DENSE_RANK() OVER (
+          ORDER BY performance.total_deliveries DESC, performance.avg_delivery_minutes ASC
+        ) AS rank_position
+      FROM (
+        SELECT
+          u.id AS delivery_id,
+          u.name,
+          COUNT(o.id) AS total_deliveries,
+          COALESCE(AVG(TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at)), 999999) AS avg_delivery_minutes
+        FROM users u
+        LEFT JOIN orders o
+          ON o.delivery_id = u.id
+          AND o.status = 'delivered'
+        WHERE u.role = 'delivery'
+        GROUP BY u.id, u.name
+      ) AS performance
+      ORDER BY rank_position ASC, performance.name ASC
+    `
+  );
+
+  const myRanking = rankingRows.find((entry) => Number(entry.delivery_id) === Number(deliveryId)) || null;
+  const metric = metricRows[0] || {};
+  const pie = pieRows[0] || {};
+  const rangeSales = toNumber(metric.range_sales);
+
+  const payload = {
+    filters: {
+      startDate: range.startSql,
+      endDate: range.endSql,
+      compareBy,
+      search
+    },
+    ordersOverview: {
+      assignedOrders: assignedOrders.map((order) => ({
+        id: order.id,
+        customerName: order.customer_name,
+        address: order.address,
+        orderValue: toNumber(order.total),
+        assignedAt: order.assigned_at,
+        status: order.status,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at
+      })),
+      deliveredOrders: deliveredOrders.map((order) => ({
+        id: order.id,
+        customerName: order.customer_name,
+        address: order.address,
+        orderValue: toNumber(order.total),
+        assignedAt: order.assigned_at,
+        deliveredAt: order.delivered_at,
+        deliveryDurationMinutes: toNumber(order.delivery_duration_minutes),
+        status: order.status
+      }))
+    },
+    performanceMetrics: {
+      totalDeliveriesAllTime: Number(metric.total_deliveries_all_time || 0),
+      deliveriesToday: Number(metric.deliveries_today || 0),
+      deliveriesThisWeek: Number(metric.deliveries_this_week || 0),
+      deliveriesThisMonth: Number(metric.deliveries_this_month || 0),
+      averageDeliveryTimeMinutes: Number(toNumber(metric.avg_delivery_time_minutes).toFixed(2)),
+      fastestDeliveryTimeMinutes: Number(toNumber(metric.fastest_delivery_time_minutes).toFixed(2)),
+      onTimeDeliveryRate: Number(toNumber(metric.on_time_rate).toFixed(2)),
+      onTimeTargetMinutes: DELIVERY_ON_TIME_TARGET_MINUTES
+    },
+    analytics: {
+      deliveriesPerDayTrend: trendRows.map((entry) => ({
+        label: entry.label,
+        deliveries: Number(entry.deliveries || 0)
+      })),
+      periodComparison: comparisonRows.map((entry) => ({
+        label: entry.label,
+        deliveries: Number(entry.deliveries || 0)
+      })),
+      onTimeVsLate: {
+        onTime: Number(pie.on_time || 0),
+        late: Number(pie.late || 0)
+      },
+      averageDeliveryDurationTrend: durationTrendRows.map((entry) => ({
+        label: entry.label,
+        averageMinutes: Number(toNumber(entry.avg_minutes).toFixed(2))
+      }))
+    },
+    advanced: {
+      earningsSummary: {
+        deliveredOrderValue: rangeSales,
+        commissionRatePercent: normalizedCommissionRate,
+        estimatedEarnings: hasCommissionRate
+          ? Number(((rangeSales * normalizedCommissionRate) / 100).toFixed(2))
+          : null
+      },
+      customerRatingsSummary: null,
+      distanceCoveredKm: null,
+      missedOrReassignedOrders: {
+        potentiallyMissed: Number(missedRows[0]?.potentially_missed || 0),
+        reassignedOrReturned: Number(missedRows[0]?.reassigned_or_returned || 0)
+      },
+      peakDeliveryHours: peakHoursRows.map((entry) => ({
+        hourOfDay: Number(entry.hour_of_day || 0),
+        deliveries: Number(entry.deliveries || 0)
+      })),
+      performanceRanking: myRanking
+        ? {
+          rank: Number(myRanking.rank_position || 0),
+          totalDeliveryStaff: rankingRows.length,
+          totalDeliveries: Number(myRanking.total_deliveries || 0),
+          averageDeliveryTimeMinutes: Number(toNumber(myRanking.avg_delivery_minutes).toFixed(2))
+        }
+        : null
+    }
+  };
+
+  successResponse(res, payload);
+});
 
 const buildCsv = (rows) => {
   const escapeCell = (value) => {
@@ -956,6 +1318,7 @@ module.exports = {
   updateOrderStatus,
   assignDelivery,
   getAssignedOrders,
+  getDeliveryDashboard,
   markAsDelivered,
   getDeliveryPersonnel,
   getAnalytics,

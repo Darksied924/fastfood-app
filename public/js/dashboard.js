@@ -57,8 +57,7 @@ async function loadDashboard() {
             await loadManagerDashboard('paid');
             break;
         case 'delivery':
-            document.getElementById('deliveryView').style.display = 'block';
-            await loadDeliveryDashboard();
+            window.location.href = '/delivery/dashboard';
             break;
     }
 }

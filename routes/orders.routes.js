@@ -39,6 +39,7 @@ router.post('/:id/assign', restrictTo('admin', 'manager'), assignDeliveryValidat
 
 // Delivery routes
 router.get('/delivery/assigned', restrictTo('delivery'), ordersController.getAssignedOrders);
+router.get('/delivery/dashboard', restrictTo('delivery'), ordersController.getDeliveryDashboard);
 router.patch('/:id/delivered', restrictTo('delivery'), orderIdValidator, validate, ordersController.markAsDelivered);
 
 module.exports = router;

@@ -21,33 +21,37 @@
             
             <form id="registerForm" class="auth-form" novalidate>
                 <div class="form-group floating-label">
-                    <input type="text" id="name" name="name" required placeholder=" " autocomplete="name">
+                    <input type="text" id="name" name="name" required placeholder=" " autocomplete="name" aria-describedby="name-hint">
                     <label for="name">Full Name</label>
                     <span class="focus-border"></span>
                     <span class="field-error" id="name-error"></span>
+                    <span id="name-hint" class="field-hint">Enter your full name as it appears on ID</span>
                 </div>
                 
                 <div class="form-group floating-label">
-                    <input type="email" id="email" name="email" required placeholder=" " autocomplete="email">
+                    <input type="email" id="email" name="email" required placeholder=" " autocomplete="email" aria-describedby="email-hint">
                     <label for="email">Email Address</label>
                     <span class="focus-border"></span>
                     <span class="field-error" id="email-error"></span>
+                    <span id="email-hint" class="field-hint">We'll send a confirmation email here</span>
                 </div>
                 
                 <div class="form-group floating-label">
-                    <input type="tel" id="phone" name="phone" required placeholder=" " autocomplete="tel">
+                    <input type="tel" id="phone" name="phone" required placeholder=" " autocomplete="tel" aria-describedby="phone-hint">
                     <label for="phone">Phone Number</label>
                     <span class="focus-border"></span>
                     <span class="field-hint">Format: 0712345678 or +254712345678</span>
+                    <span id="phone-hint" class="field-hint">Used for M-Pesa payments and delivery updates</span>
                     <span class="field-error" id="phone-error"></span>
                 </div>
                 
                 <div class="form-group floating-label">
-                    <input type="password" id="password" name="password" required placeholder=" " autocomplete="new-password">
+                    <input type="password" id="password" name="password" required placeholder=" " autocomplete="new-password" aria-describedby="password-hint">
                     <label for="password">Password</label>
                     <span class="focus-border"></span>
-                    <button type="button" class="password-toggle" onclick="togglePassword('password')">👁️</button>
+                    <button type="button" class="password-toggle" onclick="togglePassword('password')" data-tooltip="Toggle password visibility">👁️</button>
                     <span class="field-hint">Min 6 characters with letters and numbers</span>
+                    <span id="password-hint" class="field-hint">Must include at least one letter and one number</span>
                     <span class="field-error" id="password-error"></span>
                     <!-- Password strength indicator -->
                     <div class="password-strength" id="password-strength">
@@ -57,21 +61,22 @@
                 </div>
                 
                 <div class="form-group floating-label">
-                    <input type="password" id="confirmPassword" name="confirmPassword" required placeholder=" " autocomplete="new-password">
+                    <input type="password" id="confirmPassword" name="confirmPassword" required placeholder=" " autocomplete="new-password" aria-describedby="confirm-hint">
                     <label for="confirmPassword">Confirm Password</label>
                     <span class="focus-border"></span>
-                    <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">👁️</button>
+                    <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')" data-tooltip="Toggle password visibility">👁️</button>
+                    <span id="confirm-hint" class="field-hint">Re-enter your password to confirm</span>
                     <span class="field-error" id="confirmPassword-error"></span>
                 </div>
                 
-                <button type="submit" class="btn btn-primary btn-block btn-large">
+                <button type="submit" class="btn btn-primary btn-block btn-large" data-tooltip="Create your account">
                     <span class="btn-text">Sign Up</span>
                     <span class="btn-loader" style="display: none;">⏳</span>
                 </button>
             </form>
             
             <p class="auth-footer">
-                Already have an account? <a href="/login" class="auth-link">Log In</a>
+                Already have an account? <a href="/login" class="auth-link" data-tooltip="Log in with your existing account">Log In</a>
             </p>
         </div>
     </main>

@@ -18,7 +18,7 @@
         <div class="dashboard-card">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
                 <h3 style="margin:0; border-bottom:none; padding:0;">Users by Role</h3>
-                <button class="btn btn-primary" onclick="showAddUserModal()">+ Add User</button>
+                <button class="btn btn-primary" onclick="showAddUserModal()" data-tooltip="Create a new user account">+ Add User</button>
             </div>
             <div id="users-list"></div>
         </div>
@@ -26,31 +26,35 @@
 
     <div id="addUserModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('addUserModal')">&times;</span>
+            <span class="close" onclick="closeModal('addUserModal')" data-tooltip="Close this dialog">&times;</span>
             <h3>Add User</h3>
             <form id="addUserForm">
                 <div class="form-group">
                     <label for="newUserName">Name</label>
-                    <input type="text" id="newUserName" name="name" required>
+                    <input type="text" id="newUserName" name="name" required aria-describedby="newUserName-hint">
+                    <span id="newUserName-hint" class="field-hint">Enter user's full name</span>
                 </div>
                 <div class="form-group">
                     <label for="newUserEmail">Email</label>
-                    <input type="email" id="newUserEmail" name="email" required>
+                    <input type="email" id="newUserEmail" name="email" required aria-describedby="newUserEmail-hint">
+                    <span id="newUserEmail-hint" class="field-hint">Enter user's email address</span>
                 </div>
                 <div class="form-group">
                     <label for="newUserPassword">Password</label>
-                    <input type="password" id="newUserPassword" name="password" required>
+                    <input type="password" id="newUserPassword" name="password" required aria-describedby="newUserPassword-hint">
+                    <span id="newUserPassword-hint" class="field-hint">Set a secure password</span>
                 </div>
                 <div class="form-group">
                     <label for="newUserRole">Role</label>
-                    <select id="newUserRole" name="role" required>
+                    <select id="newUserRole" name="role" required aria-describedby="newUserRole-hint">
                         <option value="customer">Customer</option>
                         <option value="manager">Manager</option>
                         <option value="delivery">Delivery</option>
                         <option value="admin">Admin</option>
                     </select>
+                    <span id="newUserRole-hint" class="field-hint">Select user role (customer, manager, delivery, or admin)</span>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Create User</button>
+                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Create this user account">Create User</button>
             </form>
         </div>
     </div>

@@ -22,7 +22,7 @@
             <div class="analytics-controls">
                 <div class="analytics-filter-group">
                     <label for="rangePreset">Preset</label>
-                    <select id="rangePreset">
+                    <select id="rangePreset" data-tooltip="Quick date range selection">
                         <option value="today">Today</option>
                         <option value="week">Week</option>
                         <option value="month" selected>Month</option>
@@ -32,25 +32,25 @@
                 </div>
                 <div class="analytics-filter-group">
                     <label for="startDate">Start Date</label>
-                    <input type="date" id="startDate">
+                    <input type="date" id="startDate" data-tooltip="Filter from this date">
                 </div>
                 <div class="analytics-filter-group">
                     <label for="endDate">End Date</label>
-                    <input type="date" id="endDate">
+                    <input type="date" id="endDate" data-tooltip="Filter until this date">
                 </div>
                 <div class="analytics-filter-group">
                     <label for="trendGranularity">Trend View</label>
-                    <select id="trendGranularity">
+                    <select id="trendGranularity" data-tooltip="Choose trend granularity">
                         <option value="daily" selected>Daily</option>
                         <option value="weekly">Weekly</option>
                         <option value="monthly">Monthly</option>
                     </select>
                 </div>
                 <div class="analytics-action-group">
-                    <button class="btn btn-primary" id="applyFiltersBtn">Apply</button>
-                    <button class="btn btn-secondary" id="resetFiltersBtn">Reset</button>
-                    <button class="btn btn-secondary" id="exportCsvBtn">Export CSV</button>
-                    <button class="btn btn-secondary" id="exportPdfBtn">Export PDF</button>
+                    <button class="btn btn-primary" id="applyFiltersBtn" data-tooltip="Apply selected filters">Apply</button>
+                    <button class="btn btn-secondary" id="resetFiltersBtn" data-tooltip="Clear all filters">Reset</button>
+                    <button class="btn btn-secondary" id="exportCsvBtn" data-tooltip="Download data as CSV file">Export CSV</button>
+                    <button class="btn btn-secondary" id="exportPdfBtn" data-tooltip="Download report as PDF">Export PDF</button>
                 </div>
             </div>
         </section>

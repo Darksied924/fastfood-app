@@ -147,6 +147,24 @@ const api = {
         return this.handleResponse(response);
     },
 
+    async getDeliveryDashboard(filters = {}) {
+        const searchParams = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                searchParams.set(key, value);
+            }
+        });
+
+        const queryString = searchParams.toString();
+        const url = queryString
+            ? `${API_BASE}/orders/delivery/dashboard?${queryString}`
+            : `${API_BASE}/orders/delivery/dashboard`;
+        const response = await fetch(url, {
+            headers: this.getHeaders()
+        });
+        return this.handleResponse(response);
+    },
+
     async updateOrderStatus(orderId, status) {
         const response = await fetch(`${API_BASE}/orders/${orderId}/status`, {
             method: 'PATCH',

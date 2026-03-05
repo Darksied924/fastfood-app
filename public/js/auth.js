@@ -98,6 +98,8 @@ function updateNavigation() {
             links += '<a href="/customer/menu">Menu</a>';
             links += '<a href="/customer/cart">Cart</a>';
             links += '<a href="/customer/orders">My Orders</a>';
+        } else if (user && user.role === 'delivery') {
+            links += '<a href="/delivery/dashboard">Delivery Dashboard</a>';
         } else {
             links += '<a href="/dashboard">Dashboard</a>';
         }

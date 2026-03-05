@@ -539,9 +539,19 @@ main {
 
 .profile-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: clamp(0.75rem, 1.8vw, 1rem);
     width: 100%;
+}
+
+.profile-grid .form-group {
+    grid-column: span 6;
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+.profile-grid .form-group:last-child {
+    grid-column: span 12;
 }
 
 .profile-page .dashboard-header {
@@ -554,8 +564,9 @@ main {
 
 .dashboard-container.profile-page {
     width: 100%;
+    max-width: min(100%, 78rem);
     padding: clamp(1rem, 3vw, 2rem);
-    overflow-x: hidden;
+    overflow-x: clip;
 }
 
 .profile-page .dashboard-header h1 {
@@ -565,17 +576,24 @@ main {
 }
 
 .profile-panel-wrap {
-    display: flex;
-    justify-content: flex-end;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    align-items: start;
     width: 100%;
 }
 
 .profile-card {
-    width: min(100%, 35rem);
+    width: min(100%, 52rem);
     max-width: 100%;
-    margin-left: auto;
-    overflow: hidden;
+    margin: 0;
+    overflow: clip;
+    padding: clamp(1rem, 2.4vw, 1.5rem);
+}
+
+#profileForm {
+    width: 100%;
+    min-width: 0;
 }
 
 .profile-avatar-section {
@@ -621,10 +639,21 @@ main {
 .profile-actions .btn {
     width: 100%;
     min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .profile-page .form-group,
 .profile-page .profile-grid > * {
+    min-width: 0;
+}
+
+.profile-page .form-group label,
+.profile-image-help {
+    overflow-wrap: anywhere;
+}
+
+.profile-page .form-group input {
     min-width: 0;
 }
 
@@ -638,9 +667,28 @@ main {
     grid-column: 1 / -1;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 992px) {
+    .profile-card {
+        width: min(100%, 44rem);
+    }
+
+    .profile-grid .form-group {
+        grid-column: span 6;
+    }
+
+    .profile-grid .form-group:last-child {
+        grid-column: span 12;
+    }
+}
+
+@media (max-width: 768px) {
     .profile-grid {
         grid-template-columns: 1fr;
+    }
+
+    .profile-grid .form-group,
+    .profile-grid .form-group:last-child {
+        grid-column: span 1;
     }
 
     .profile-actions {
@@ -655,16 +703,20 @@ main {
 
 @media (max-width: 560px) {
     .dashboard-container.profile-page {
-        padding: 0.9rem;
+        padding: 0.85rem;
     }
 
     .profile-page .dashboard-header {
-        padding: 1.1rem;
+        padding: 1rem;
         gap: 0.55rem;
     }
 
     .profile-page .dashboard-header .user-role {
         padding: 0.4rem 0.9rem;
+    }
+
+    .profile-card {
+        padding: 0.9rem;
     }
 
     .profile-actions {
@@ -1667,6 +1719,17 @@ footer {
     margin-top: 0.65rem;
 }
 
+.delivery-refresh-note {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.delivery-priority-section {
+    border: 2px solid rgba(214, 40, 40, 0.35);
+    box-shadow: 0 14px 28px rgba(214, 40, 40, 0.08);
+}
+
 .heatmap-wrap {
     margin-top: 1rem;
 }
@@ -1779,4 +1842,206 @@ footer {
 .password-strength .strength-text {
     font-size: 0.75rem;
     font-weight: 500;
+}
+
+/* ========================================
+   Tooltip System
+   ======================================== */
+[data-tooltip] {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+/* Tooltip arrow */
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    padding: 0.5rem 0.75rem;
+    background: rgba(33, 33, 33, 0.95);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    border-radius: 6px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    line-height: 1.4;
+    max-width: 250px;
+    white-space: normal;
+    text-align: center;
+    word-wrap: break-word;
+}
+
+/* Tooltip arrow pointer */
+[data-tooltip]::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-2px);
+    border: 6px solid transparent;
+    border-top-color: rgba(33, 33, 33, 0.95);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 9999;
+}
+
+/* Show tooltip on hover */
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-4px);
+}
+
+/* Show tooltip on focus (keyboard accessibility) */
+[data-tooltip]:focus::after,
+[data-tooltip]:focus::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-4px);
+}
+
+/* Focus visible for keyboard users */
+[data-tooltip]:focus:not(:focus-visible)::after,
+[data-tooltip]:focus:not(:focus-visible)::before {
+    opacity: 0;
+    visibility: hidden;
+}
+
+[data-tooltip]:focus-visible::after,
+[data-tooltip]:focus-visible::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-4px);
+}
+
+/* Tooltip positioning variants */
+
+/* Right-aligned tooltip */
+[data-tooltip-position="right"]::after {
+    bottom: auto;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(8px);
+}
+
+[data-tooltip-position="right"]::before {
+    bottom: auto;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(2px);
+    border-color: transparent;
+    border-right-color: rgba(33, 33, 33, 0.95);
+    border-left-color: transparent;
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+}
+
+[data-tooltip-position="right"]:hover::after,
+[data-tooltip-position="right"]:hover::before,
+[data-tooltip-position="right"]:focus::after,
+[data-tooltip-position="right"]:focus::before {
+    transform: translateY(-50%) translateX(4px);
+}
+
+/* Left-aligned tooltip */
+[data-tooltip-position="left"]::after {
+    bottom: auto;
+    right: 100%;
+    left: auto;
+    top: 50%;
+    transform: translateY(-50%) translateX(-8px);
+}
+
+[data-tooltip-position="left"]::before {
+    bottom: auto;
+    right: 100%;
+    left: auto;
+    top: 50%;
+    transform: translateY(-50%) translateX(-2px);
+    border-color: transparent;
+    border-left-color: rgba(33, 33, 33, 0.95);
+    border-right-color: transparent;
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+}
+
+[data-tooltip-position="left"]:hover::after,
+[data-tooltip-position="left"]:hover::before,
+[data-tooltip-position="left"]:focus::after,
+[data-tooltip-position="left"]:focus::before {
+    transform: translateY(-50%) translateX(-4px);
+}
+
+/* Bottom tooltip */
+[data-tooltip-position="bottom"]::after {
+    bottom: auto;
+    top: 100%;
+    transform: translateX(-50%) translateY(8px);
+}
+
+[data-tooltip-position="bottom"]::before {
+    bottom: auto;
+    top: 100%;
+    transform: translateX(-50%) translateY(-2px);
+    border-color: transparent;
+    border-bottom-color: rgba(33, 33, 33, 0.95);
+    border-top-color: transparent;
+    border-left-color: transparent;
+    border-right-color: transparent;
+}
+
+[data-tooltip-position="bottom"]:hover::after,
+[data-tooltip-position="bottom"]:hover::before,
+[data-tooltip-position="bottom"]:focus::after,
+[data-tooltip-position="bottom"]:focus::before {
+    transform: translateX(-50%) translateY(4px);
+}
+
+/* Tooltip with icon indicator */
+[data-tooltip]::before {
+    /* Only show arrow for top tooltips by default */
+}
+
+/* Disable tooltip on elements that already have visible labels */
+[data-tooltip-no-label]::after {
+    display: none;
+}
+
+/* Touch device adjustments - show on tap and hold would require JS
+   For now, tooltips work on focus which covers keyboard accessibility */
+
+/* Mobile responsive - adjust tooltip for small screens */
+@media (max-width: 480px) {
+    [data-tooltip]::after {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.6rem;
+        max-width: 200px;
+    }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    [data-tooltip]::after,
+    [data-tooltip]::before {
+        transition: none;
+    }
+}
+
+/* Touch active state for mobile */
+[data-tooltip].touch-active::after,
+[data-tooltip].touch-active::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-4px);
 }

@@ -19,8 +19,8 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
                 <h3 style="margin:0; border-bottom:none; padding:0;">All Products</h3>
                 <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
-                    <button class="btn btn-secondary" onclick="showEditProductModal()">Edit Product</button>
-                    <button class="btn btn-primary" onclick="showAddProductModal()">+ Add Product</button>
+                    <button class="btn btn-secondary" onclick="showEditProductModal()" data-tooltip="Select and edit an existing product">Edit Product</button>
+                    <button class="btn btn-primary" onclick="showAddProductModal()" data-tooltip="Add a new product to the menu">+ Add Product</button>
                 </div>
             </div>
             <div id="products-list"></div>
@@ -29,34 +29,37 @@
 
     <div id="addProductModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('addProductModal')">&times;</span>
+            <span class="close" onclick="closeModal('addProductModal')" data-tooltip="Close this dialog">&times;</span>
             <h3>Add Product</h3>
             <form id="addProductForm">
                 <div class="form-group">
                     <label for="productName">Product Name</label>
-                    <input type="text" id="productName" name="name" required>
+                    <input type="text" id="productName" name="name" required aria-describedby="productName-hint">
+                    <span id="productName-hint" class="field-hint">Enter the name of the dish</span>
                 </div>
                 <div class="form-group">
                     <label for="productPrice">Price (KSh)</label>
-                    <input type="number" id="productPrice" name="price" step="1" min="1" required>
+                    <input type="number" id="productPrice" name="price" step="1" min="1" required aria-describedby="productPrice-hint">
+                    <span id="productPrice-hint" class="field-hint">Set the price in Kenyan Shillings</span>
                 </div>
                 <div class="form-group">
                     <label for="productImage">Emoji</label>
-                    <input type="text" id="productImage" name="image" value="🍔">
+                    <input type="text" id="productImage" name="image" value="🍔" aria-describedby="productImage-hint">
+                    <span id="productImage-hint" class="field-hint">Choose an emoji to represent the dish</span>
                 </div>
                 <div class="form-group">
                     <label>
                         <input type="checkbox" name="available" checked> Available
                     </label>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Create Product</button>
+                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Add this product to the menu">Create Product</button>
             </form>
         </div>
     </div>
 
     <div id="editProductModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('editProductModal')">&times;</span>
+            <span class="close" onclick="closeModal('editProductModal')" data-tooltip="Close this dialog">&times;</span>
             <h3>Edit Product</h3>
             <form id="editProductForm">
                 <div class="form-group">
@@ -81,8 +84,8 @@
                     </label>
                 </div>
                 <div style="display:flex; gap:0.6rem;">
-                    <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
-                    <button type="button" id="deleteSelectedProductBtn" class="btn btn-secondary btn-block">Delete Product</button>
+                    <button type="submit" class="btn btn-primary btn-block" data-tooltip="Save changes to this product">Save Changes</button>
+                    <button type="button" id="deleteSelectedProductBtn" class="btn btn-secondary btn-block" data-tooltip="Remove this product from the menu">Delete Product</button>
                 </div>
             </form>
         </div>

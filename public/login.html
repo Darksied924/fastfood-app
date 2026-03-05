@@ -21,30 +21,32 @@
             
             <form id="loginForm" class="auth-form" novalidate>
                 <div class="form-group floating-label">
-                    <input type="email" id="email" name="email" required placeholder=" " autocomplete="email">
+                    <input type="email" id="email" name="email" required placeholder=" " autocomplete="email" aria-describedby="email-hint">
                     <label for="email">Email Address</label>
                     <span class="focus-border"></span>
                     <span class="field-error" id="email-error"></span>
+                    <span id="email-hint" class="field-hint">Enter your registered email address</span>
                 </div>
                 
                 <div class="form-group floating-label">
-                    <input type="password" id="password" name="password" required placeholder=" " autocomplete="current-password">
+                    <input type="password" id="password" name="password" required placeholder=" " autocomplete="current-password" aria-describedby="password-hint">
                     <label for="password">Password</label>
                     <span class="focus-border"></span>
-                    <button type="button" class="password-toggle" onclick="togglePassword('password')">👁️</button>
+                    <button type="button" class="password-toggle" onclick="togglePassword('password')" data-tooltip="Toggle password visibility">👁️</button>
+                    <span id="password-hint" class="field-hint">Enter your password</span>
                     <span class="field-error" id="password-error"></span>
                 </div>
                 
                 <div class="form-options">
                     <label class="checkbox-container">
-                        <input type="checkbox" name="remember">
+                        <input type="checkbox" name="remember" data-tooltip="Stay logged in on this device">
                         <span class="checkmark"></span>
                         Remember me
                     </label>
-                    <a href="/forgot-password" class="forgot-link">Forgot Password?</a>
+                    <a href="/forgot-password" class="forgot-link" data-tooltip="Reset your password via SMS">Forgot Password?</a>
                 </div>
                 
-                <button type="submit" class="btn btn-primary btn-block btn-large">
+                <button type="submit" class="btn btn-primary btn-block btn-large" data-tooltip="Sign in to your account">
                     <span class="btn-text">Log In</span>
                     <span class="btn-loader" style="display: none;">⏳</span>
                 </button>
@@ -55,18 +57,18 @@
             </div>
             
             <div class="social-login">
-                <button class="social-btn google">
+                <button class="social-btn google" data-tooltip="Sign in with your Google account">
                     <span class="social-icon">G</span>
                     <span>Google</span>
                 </button>
-                <button class="social-btn facebook">
+                <button class="social-btn facebook" data-tooltip="Sign in with your Facebook account">
                     <span class="social-icon">f</span>
                     <span>Facebook</span>
                 </button>
             </div>
             
             <p class="auth-footer">
-                Don't have an account? <a href="/register" class="auth-link">Sign Up</a>
+                Don't have an account? <a href="/register" class="auth-link" data-tooltip="Create a new account">Sign Up</a>
             </p>
         </div>
     </main>
@@ -184,7 +186,9 @@
                     showToast('Login successful! Redirecting...', 'success');
                     
                     setTimeout(() => {
-                        const redirectPath = response.data.role === 'customer' ? '/customer/menu' : '/dashboard';
+                        const redirectPath = response.data.role === 'customer'
+                            ? '/customer/menu'
+                            : (response.data.role === 'delivery' ? '/delivery/dashboard' : '/dashboard');
                         window.location.href = redirectPath;
                     }, 1000);
                 } else {

@@ -20,8 +20,8 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:0.8rem; flex-wrap:wrap;">
                 <h3 style="margin:0; border-bottom:none; padding:0;">📋 My Orders</h3>
                 <div style="display:flex; gap:0.6rem;">
-                    <a class="btn btn-secondary" href="/customer/menu">Menu</a>
-                    <a class="btn btn-primary" href="/customer/cart">Cart</a>
+                    <a class="btn btn-secondary" href="/customer/menu" data-tooltip="Browse menu items">Menu</a>
+                    <a class="btn btn-primary" href="/customer/cart" data-tooltip="View your cart">Cart</a>
                 </div>
             </div>
             <div id="customer-orders"></div>
@@ -30,21 +30,22 @@
 
     <div id="paymentModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('paymentModal')">&times;</span>
+            <span class="close" onclick="closeModal('paymentModal')" data-tooltip="Close this dialog">&times;</span>
             <h3>💳 Simulate M-Pesa Payment</h3>
             <p>Order Total: <span id="paymentAmount">KSh 0</span></p>
             <form id="paymentForm">
                 <input type="hidden" id="orderId" name="orderId">
                 <div class="form-group">
                     <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" placeholder="254712345678" required>
+                    <input type="tel" id="phone" name="phone" placeholder="254712345678" required aria-describedby="phone-hint">
+                    <span id="phone-hint" class="field-hint">Enter your M-Pesa registered phone number</span>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Simulate STK Push</button>
+                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Simulate STK Push</button>
             </form>
         </div>
     </div>
 
-    <a href="/customer/cart" class="floating-cart-btn" id="floatingCartBtn" aria-label="Go to cart">
+    <a href="/customer/cart" class="floating-cart-btn" id="floatingCartBtn" aria-label="Go to cart" data-tooltip="View your cart and checkout">
         <span class="floating-cart-icon">🛒</span>
         <span class="floating-cart-label">Go to Cart</span>
         <span class="floating-cart-count" id="floatingCartCount">0</span>

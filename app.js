@@ -115,6 +115,10 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
+app.get('/delivery/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'delivery-dashboard.html'));
+});
+
 app.get('/customer/menu', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'customer-menu.html'));
 });

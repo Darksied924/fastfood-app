@@ -32,8 +32,8 @@
                         <strong>Total:</strong> <span id="cart-total">KSh 0</span>
                     </div>
                     <div class="cart-actions">
-                        <button class="btn btn-primary" id="checkoutBtn" onclick="checkout()">Checkout</button>
-                        <button class="btn btn-secondary" onclick="clearCart()">Clear Cart</button>
+                        <button class="btn btn-primary" id="checkoutBtn" onclick="checkout()" data-tooltip="Proceed to payment">Checkout</button>
+                        <button class="btn btn-secondary" onclick="clearCart()" data-tooltip="Remove all items from cart">Clear Cart</button>
                     </div>
                 </section>
                 
@@ -49,22 +49,22 @@
             <div class="dashboard-card">
                 <h3>🧭 Admin Control Center</h3>
                 <div class="product-grid">
-                    <a href="/admin/users" class="feature-card admin-link-card">
+                    <a href="/admin/users" class="feature-card admin-link-card" data-tooltip="View and manage user accounts">
                         <div class="feature-icon">👥</div>
                         <h4>Users</h4>
                         <p>Manage user accounts and roles</p>
                     </a>
-                    <a href="/admin/products" class="feature-card admin-link-card">
+                    <a href="/admin/products" class="feature-card admin-link-card" data-tooltip="Add, edit, or remove menu items">
                         <div class="feature-icon">🍕</div>
                         <h4>Products</h4>
                         <p>Create and manage menu products</p>
                     </a>
-                    <a href="/admin/orders" class="feature-card admin-link-card">
+                    <a href="/admin/orders" class="feature-card admin-link-card" data-tooltip="View and manage all orders">
                         <div class="feature-icon">📦</div>
                         <h4>Orders</h4>
                         <p>Track and update all orders</p>
                     </a>
-                    <a href="/admin/analytics" class="feature-card admin-link-card analytics-preview-tile">
+                    <a href="/admin/analytics" class="feature-card admin-link-card analytics-preview-tile" data-tooltip="View sales reports and analytics">
                         <div class="feature-icon">📈</div>
                         <h4>Analytics</h4>
                         <p>Track revenue trends and performance</p>
@@ -81,10 +81,10 @@
         <div id="managerView" class="role-view" style="display: none;">
             <div class="dashboard-card">
                 <div class="dashboard-tabs">
-                    <button class="tab-btn active" onclick="showManagerTab('paid')">New Orders</button>
-                    <button class="tab-btn" onclick="showManagerTab('preparing')">Preparing</button>
-                    <button class="tab-btn" onclick="showManagerTab('out_for_delivery')">Out for Delivery</button>
-                    <button class="tab-btn" onclick="showManagerTab('delivered')">Delivered</button>
+                    <button class="tab-btn active" onclick="showManagerTab('paid')" data-tooltip="View newly placed orders">New Orders</button>
+                    <button class="tab-btn" onclick="showManagerTab('preparing')" data-tooltip="View orders being prepared">Preparing</button>
+                    <button class="tab-btn" onclick="showManagerTab('out_for_delivery')" data-tooltip="View orders out for delivery">Out for Delivery</button>
+                    <button class="tab-btn" onclick="showManagerTab('delivered')" data-tooltip="View completed orders">Delivered</button>
                 </div>
                 <div id="manager-orders-list" style="margin-top: 1rem;"></div>
             </div>
@@ -102,33 +102,34 @@
     <!-- Modals -->
     <div id="paymentModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('paymentModal')">&times;</span>
+            <span class="close" onclick="closeModal('paymentModal')" data-tooltip="Close this dialog">&times;</span>
             <h3>💳 Simulate M-Pesa Payment</h3>
             <p>Order Total: <span id="paymentAmount">KSh 0</span></p>
             <form id="paymentForm">
                 <input type="hidden" id="orderId" name="orderId">
                 <div class="form-group">
                     <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" placeholder="254712345678" required>
+                    <input type="tel" id="phone" name="phone" placeholder="254712345678" required aria-describedby="phone-hint">
+                    <span id="phone-hint" class="field-hint">Enter the phone number registered with M-Pesa</span>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Simulate STK Push</button>
+                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Simulate STK Push</button>
             </form>
         </div>
     </div>
 
     <div id="assignDeliveryModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('assignDeliveryModal')">&times;</span>
+            <span class="close" onclick="closeModal('assignDeliveryModal')" data-tooltip="Close this dialog">&times;</span>
             <h3>🚚 Assign Delivery</h3>
             <form id="assignDeliveryForm">
                 <input type="hidden" id="assignOrderId" name="orderId">
                 <div class="form-group">
                     <label for="assignDeliveryId">Delivery Person</label>
-                    <select id="assignDeliveryId" name="deliveryId" required>
+                    <select id="assignDeliveryId" name="deliveryId" required data-tooltip="Choose a delivery person for this order">
                         <option value="">Select delivery person</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Assign</button>
+                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Assign selected delivery person">Assign</button>
             </form>
         </div>
     </div>

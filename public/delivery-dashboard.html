@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Dashboard - FastFood</title>
+    <meta name="description" content="Delivery personnel dashboard for assigned orders, completed deliveries, and performance analytics">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
+</head>
+<body>
+    <header></header>
+
+    <main class="dashboard-container analytics-page delivery-dashboard-page">
+        <div class="dashboard-header">
+            <h1>Delivery Dashboard</h1>
+            <div class="user-role" id="deliveryRole">DELIVERY</div>
+        </div>
+
+        <section class="dashboard-card delivery-priority-section">
+            <h3>Assigned Orders (Most Recent First)</h3>
+            <div id="assignedOrdersWrap"></div>
+            <p class="delivery-refresh-note" data-tooltip="Orders list updates automatically every 30 seconds">Auto-refresh every 30 seconds for assigned-order updates.</p>
+        </section>
+
+        <section class="dashboard-card">
+            <h3>Performance Metrics</h3>
+            <div id="kpiGrid" class="kpi-grid"></div>
+        </section>
+
+        <section class="dashboard-card">
+            <h3>Delivered Orders</h3>
+            <div id="deliveredOrdersWrap"></div>
+        </section>
+
+        <section class="dashboard-card">
+            <h3>Analytics & Visualizations</h3>
+            <div class="analytics-chart-grid">
+                <div class="chart-card"><h4>Deliveries Per Day</h4><canvas id="deliveriesTrendChart"></canvas></div>
+                <div class="chart-card"><h4>Weekly/Monthly Comparison</h4><canvas id="periodComparisonChart"></canvas></div>
+                <div class="chart-card"><h4>On-time vs Late</h4><canvas id="onTimePieChart"></canvas></div>
+                <div class="chart-card"><h4>Average Delivery Duration Trend</h4><canvas id="durationTrendChart"></canvas></div>
+            </div>
+        </section>
+
+        <section class="dashboard-card analytics-split-grid">
+            <div>
+                <h3>Advanced Insights</h3>
+                <div id="advancedSummary"></div>
+            </div>
+            <div>
+                <h3>Peak Delivery Hours</h3>
+                <div id="peakHoursWrap"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/delivery-dashboard.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

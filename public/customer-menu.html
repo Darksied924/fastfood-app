@@ -20,15 +20,15 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:0.8rem; flex-wrap:wrap;">
                 <h3 style="margin:0; border-bottom:none; padding:0;">🍔 Browse Menu</h3>
                 <div style="display:flex; gap:0.6rem;">
-                    <a class="btn btn-secondary" href="/customer/cart">Go to Cart</a>
-                    <a class="btn btn-primary" href="/customer/orders">My Orders</a>
+                    <a class="btn btn-secondary" href="/customer/cart" data-tooltip="View items in your cart">Go to Cart</a>
+                    <a class="btn btn-primary" href="/customer/orders" data-tooltip="View your order history">My Orders</a>
                 </div>
             </div>
             <div class="product-grid" id="customer-products"></div>
         </div>
     </main>
 
-    <a href="/customer/cart" class="floating-cart-btn" id="floatingCartBtn" aria-label="Go to cart">
+    <a href="/customer/cart" class="floating-cart-btn" id="floatingCartBtn" aria-label="Go to cart" data-tooltip="View your cart and checkout">
         <span class="floating-cart-icon">🛒</span>
         <span class="floating-cart-label">Go to Cart</span>
         <span class="floating-cart-count" id="floatingCartCount">0</span>

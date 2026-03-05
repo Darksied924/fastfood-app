@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle modal clicks outside
     handleModalClicks();
+
+    // Initialize tooltips
+    initializeTooltips();
 });
 
 function injectHeader() {
@@ -52,7 +55,7 @@ function injectHeader() {
 
 function shouldShowBackButton(pathname) {
     const normalizedPath = pathname.replace(/\/+$/, '') || '/';
-    const routesWithoutBackButton = new Set(['/', '/dashboard']);
+    const routesWithoutBackButton = new Set(['/', '/dashboard', '/delivery/dashboard']);
 
     if (routesWithoutBackButton.has(normalizedPath)) {
         return false;
@@ -64,6 +67,7 @@ function shouldShowBackButton(pathname) {
 function getBackFallbackPath(pathname) {
     if (pathname.startsWith('/admin/')) return '/dashboard';
     if (pathname.startsWith('/customer/')) return '/customer/menu';
+    if (pathname.startsWith('/delivery/')) return '/delivery/dashboard';
     if (pathname === '/profile') return '/dashboard';
     if (pathname === '/forgot-password') return '/login';
     if (pathname.startsWith('/reset-password')) return '/login';
@@ -178,6 +182,51 @@ function initializeMobileNav() {
             closeMobileNav();
         }
     });
+}
+
+// Initialize tooltips
+function initializeTooltips() {
+    const tooltipElements = document.querySelectorAll('[data-tooltip]');
+    
+    tooltipElements.forEach(element => {
+        // Add tabindex for keyboard accessibility
+        if (!element.hasAttribute('tabindex') && 
+            !element.matches('a, button, input, select, textarea')) {
+            element.setAttribute('tabindex', '0');
+        }
+        
+        // Touch device support - show tooltip on touch
+        element.addEventListener('touchstart', function(e) {
+            // Prevent scrolling while showing tooltip
+            e.preventDefault();
+            
+            // Hide any other open tooltips
+            document.querySelectorAll('[data-tooltip].touch-active').forEach(el => {
+                if (el !== element) {
+                    el.classList.remove('touch-active');
+                }
+            });
+            
+            // Toggle tooltip visibility
+            element.classList.toggle('touch-active');
+        }, { passive: false });
+    });
+    
+    // Hide tooltips when clicking elsewhere
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('[data-tooltip]')) {
+            document.querySelectorAll('[data-tooltip].touch-active').forEach(el => {
+                el.classList.remove('touch-active');
+            });
+        }
+    });
+    
+    // Hide tooltips on scroll
+    document.addEventListener('scroll', function() {
+        document.querySelectorAll('[data-tooltip].touch-active').forEach(el => {
+            el.classList.remove('touch-active');
+        });
+    }, { passive: true });
 }
 
 // Add CSS animation keyframes

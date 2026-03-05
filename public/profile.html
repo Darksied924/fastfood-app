@@ -21,7 +21,7 @@
                 <div class="profile-avatar-section">
                     <img id="profileAvatarPreview" class="profile-avatar" alt="Profile image preview">
                     <input type="file" id="profileImage" class="profile-upload-input" accept="image/*">
-                    <label id="profileImageLabel" for="profileImage" class="btn btn-secondary profile-hidden">Upload Image</label>
+                    <label id="profileImageLabel" for="profileImage" class="btn btn-secondary profile-hidden" data-tooltip="Choose a new profile picture">Upload Image</label>
                     <small class="profile-image-help">JPG, PNG, WEBP up to 2MB</small>
                 </div>
 
@@ -29,22 +29,25 @@
                     <div class="profile-grid">
                         <div class="form-group">
                             <label for="profileName">Name</label>
-                            <input type="text" id="profileName" name="name" required>
+                            <input type="text" id="profileName" name="name" required aria-describedby="profileName-hint">
+                            <span id="profileName-hint" class="field-hint">Your display name</span>
                         </div>
                         <div class="form-group">
                             <label for="profileEmail">Email</label>
-                            <input type="email" id="profileEmail" name="email" required>
+                            <input type="email" id="profileEmail" name="email" required aria-describedby="profileEmail-hint">
+                            <span id="profileEmail-hint" class="field-hint">Your registered email address</span>
                         </div>
                         <div class="form-group">
                             <label for="profilePhone">Phone</label>
-                            <input type="tel" id="profilePhone" name="phone" placeholder="0712345678">
+                            <input type="tel" id="profilePhone" name="phone" placeholder="0712345678" aria-describedby="profilePhone-hint">
+                            <span id="profilePhone-hint" class="field-hint">Phone for M-Pesa payments</span>
                         </div>
                     </div>
                     <div class="profile-actions">
-                        <button type="button" id="editProfileBtn" class="btn btn-secondary">Edit Profile</button>
-                        <button type="submit" id="saveProfileBtn" class="btn btn-primary profile-hidden">Save Profile</button>
-                        <button type="button" id="cancelEditBtn" class="btn btn-secondary profile-hidden">Cancel</button>
-                        <a class="btn btn-secondary" href="/dashboard">Back to Dashboard</a>
+                        <button type="button" id="editProfileBtn" class="btn btn-secondary" data-tooltip="Enable editing your profile">Edit Profile</button>
+                        <button type="submit" id="saveProfileBtn" class="btn btn-primary profile-hidden" data-tooltip="Save changes to your profile">Save Profile</button>
+                        <button type="button" id="cancelEditBtn" class="btn btn-secondary profile-hidden" data-tooltip="Discard changes">Cancel</button>
+                        <a class="btn btn-secondary" href="/dashboard" data-tooltip="Return to your dashboard">Back to Dashboard</a>
                     </div>
                 </form>
             </div>
