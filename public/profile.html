@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - FastFood</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header></header>
+
+    <main class="dashboard-container profile-page">
+        <div class="dashboard-header">
+            <h1>My Profile</h1>
+            <div class="user-role" id="profileRole">USER</div>
+        </div>
+
+        <section class="profile-panel-wrap">
+            <div class="dashboard-card profile-card">
+                <h3>Profile Details</h3>
+                <div class="profile-avatar-section">
+                    <img id="profileAvatarPreview" class="profile-avatar" alt="Profile image preview">
+                    <input type="file" id="profileImage" class="profile-upload-input" accept="image/*">
+                    <label id="profileImageLabel" for="profileImage" class="btn btn-secondary profile-hidden">Upload Image</label>
+                    <small class="profile-image-help">JPG, PNG, WEBP up to 2MB</small>
+                </div>
+
+                <form id="profileForm">
+                    <div class="profile-grid">
+                        <div class="form-group">
+                            <label for="profileName">Name</label>
+                            <input type="text" id="profileName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profileEmail">Email</label>
+                            <input type="email" id="profileEmail" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profilePhone">Phone</label>
+                            <input type="tel" id="profilePhone" name="phone" placeholder="0712345678">
+                        </div>
+                    </div>
+                    <div class="profile-actions">
+                        <button type="button" id="editProfileBtn" class="btn btn-secondary">Edit Profile</button>
+                        <button type="submit" id="saveProfileBtn" class="btn btn-primary profile-hidden">Save Profile</button>
+                        <button type="button" id="cancelEditBtn" class="btn btn-secondary profile-hidden">Cancel</button>
+                        <a class="btn btn-secondary" href="/dashboard">Back to Dashboard</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer></footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/profile.js"></script>
+</body>
+</html>

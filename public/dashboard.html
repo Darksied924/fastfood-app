@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - FastFood</title>
+    <meta name="description" content="FastFood Dashboard - Manage your orders and account">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
+</head>
+<body>
+    <header></header>
+
+    <main class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>Welcome, <span id="userName">User</span>!</h1>
+            <div class="user-role" id="userRole">Role</div>
+        </div>
+
+        <!-- Customer View -->
+        <div id="customerView" class="role-view" style="display: none;">
+            <div class="customer-sections">
+                <section class="dashboard-card customer-section">
+                    <h3>🍔 Browse Menu</h3>
+                    <div class="product-grid" id="customer-products"></div>
+                </section>
+                
+                <section class="dashboard-card customer-section">
+                    <h3>🛒 Your Cart</h3>
+                    <div id="cart-items"></div>
+                    <div class="cart-total">
+                        <strong>Total:</strong> <span id="cart-total">KSh 0</span>
+                    </div>
+                    <div class="cart-actions">
+                        <button class="btn btn-primary" id="checkoutBtn" onclick="checkout()">Checkout</button>
+                        <button class="btn btn-secondary" onclick="clearCart()">Clear Cart</button>
+                    </div>
+                </section>
+                
+                <section class="dashboard-card customer-section">
+                    <h3>📋 Your Orders</h3>
+                    <div id="customer-orders"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Admin View -->
+        <div id="adminView" class="role-view" style="display: none;">
+            <div class="dashboard-card">
+                <h3>🧭 Admin Control Center</h3>
+                <div class="product-grid">
+                    <a href="/admin/users" class="feature-card admin-link-card">
+                        <div class="feature-icon">👥</div>
+                        <h4>Users</h4>
+                        <p>Manage user accounts and roles</p>
+                    </a>
+                    <a href="/admin/products" class="feature-card admin-link-card">
+                        <div class="feature-icon">🍕</div>
+                        <h4>Products</h4>
+                        <p>Create and manage menu products</p>
+                    </a>
+                    <a href="/admin/orders" class="feature-card admin-link-card">
+                        <div class="feature-icon">📦</div>
+                        <h4>Orders</h4>
+                        <p>Track and update all orders</p>
+                    </a>
+                    <a href="/admin/analytics" class="feature-card admin-link-card analytics-preview-tile">
+                        <div class="feature-icon">📈</div>
+                        <h4>Analytics</h4>
+                        <p>Track revenue trends and performance</p>
+                        <div class="analytics-preview" id="analyticsSummaryPreview">
+                            <small>Total Sales: <strong id="analyticsPreviewTotalSales">--</strong></small>
+                            <small>Today's Sales: <strong id="analyticsPreviewTodaySales">--</strong></small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manager View -->
+        <div id="managerView" class="role-view" style="display: none;">
+            <div class="dashboard-card">
+                <div class="dashboard-tabs">
+                    <button class="tab-btn active" onclick="showManagerTab('paid')">New Orders</button>
+                    <button class="tab-btn" onclick="showManagerTab('preparing')">Preparing</button>
+                    <button class="tab-btn" onclick="showManagerTab('out_for_delivery')">Out for Delivery</button>
+                    <button class="tab-btn" onclick="showManagerTab('delivered')">Delivered</button>
+                </div>
+                <div id="manager-orders-list" style="margin-top: 1rem;"></div>
+            </div>
+        </div>
+
+        <!-- Delivery View -->
+        <div id="deliveryView" class="role-view" style="display: none;">
+            <div class="dashboard-card">
+                <h3>🚚 My Assigned Orders</h3>
+                <div id="delivery-orders-list"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('paymentModal')">&times;</span>
+            <h3>💳 Simulate M-Pesa Payment</h3>
+            <p>Order Total: <span id="paymentAmount">KSh 0</span></p>
+            <form id="paymentForm">
+                <input type="hidden" id="orderId" name="orderId">
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" placeholder="254712345678" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Simulate STK Push</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="assignDeliveryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('assignDeliveryModal')">&times;</span>
+            <h3>🚚 Assign Delivery</h3>
+            <form id="assignDeliveryForm">
+                <input type="hidden" id="assignOrderId" name="orderId">
+                <div class="form-group">
+                    <label for="assignDeliveryId">Delivery Person</label>
+                    <select id="assignDeliveryId" name="deliveryId" required>
+                        <option value="">Select delivery person</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Assign</button>
+            </form>
+        </div>
+    </div>
+
+    <footer></footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/cart.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

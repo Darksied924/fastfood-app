@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastFood - Delicious Food Delivered Fast</title>
+    <meta name="description" content="Order your favorite fast food online for quick delivery. Burgers, fries, milkshakes and more!">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
+</head>
+<body>
+
+<header></header>
+
+<main>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <span class="hero-badge">Fast. Reliable. Delivered.</span>
+
+            <h1 class="hero-title">
+                <span class="title-line">Fast Food,</span>
+                <span class="title-line gradient-text">Delivered Fast</span>
+            </h1>
+
+            <p class="hero-subtitle">
+                Fresh ingredients, prepared with care and delivered in minutes. 
+                Order seamlessly anytime, anywhere.
+            </p>
+
+            <div class="hero-actions">
+                <a href="/register" class="btn btn-primary btn-large">Get Started</a>
+                <a href="/login" class="btn btn-secondary btn-large">Login</a>
+            </div>
+
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number">5000+</span>
+                    <span class="stat-label">Happy Customers</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">30 min</span>
+                    <span class="stat-label">Average Delivery</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">24/7</span>
+                    <span class="stat-label">Service</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-image">
+            <div class="floating-food">
+                <span class="food-emoji burger">🍔</span>
+                <span class="food-emoji fries">🍟</span>
+                <span class="food-emoji drink">🥤</span>
+                <span class="food-emoji pizza">🍕</span>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <span class="section-subtitle">WHY CHOOSE US</span>
+            <h2 class="section-title">Built for <span class="gradient-text">Speed & Quality</span></h2>
+            <p class="section-description">
+                A modern food delivery experience designed for convenience.
+            </p>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <div class="feature-icon">🍔</div>
+                </div>
+                <h3>Quality Ingredients</h3>
+                <p>Freshly sourced and expertly prepared meals every day.</p>
+                <div class="feature-hover-effect"></div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <div class="feature-icon">⚡</div>
+                </div>
+                <h3>Fast Delivery</h3>
+                <p>Optimized routing ensures your food arrives hot and on time.</p>
+                <div class="feature-hover-effect"></div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <div class="feature-icon">💳</div>
+                </div>
+                <h3>Secure Payments</h3>
+                <p>Pay easily via M-Pesa, cards, or cash on delivery.</p>
+                <div class="feature-hover-effect"></div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <div class="feature-icon">🌙</div>
+                </div>
+                <h3>Always Available</h3>
+                <p>Open 24/7 to satisfy your cravings anytime.</p>
+                <div class="feature-hover-effect"></div>
+            </div>
+        </div>
+
+        <!-- Moved Learn More Button -->
+        <div class="section-action">
+            <a href="#popular-products" class="btn btn-outline">Learn More</a>
+        </div>
+    </section>
+
+
+    <!-- Popular Items Section -->
+    <section class="popular-items">
+        <div class="section-header">
+            <span class="section-subtitle">OUR MENU</span>
+            <h2 class="section-title">Customer Favorites</h2>
+            <p class="section-description">Explore our most ordered items.</p>
+        </div>
+
+        <div class="product-grid" id="popular-products">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading items...</p>
+            </div>
+        </div>
+
+        <div class="section-action">
+            <a href="/menu" class="btn btn-primary">View Full Menu</a>
+        </div>
+    </section>
+
+
+    <!-- Special Offer Banner -->
+    <section class="offers-banner">
+        <div class="offer-content">
+            <h3>Special Combo Offer</h3>
+            <p class="offer-description">Any burger + fries + drink</p>
+            <div class="offer-price">
+                <span class="old-price">KSh 1,900</span>
+                <span class="new-price">KSh 1,500</span>
+            </div>
+            <a href="/register" class="btn btn-primary">Order Now</a>
+        </div>
+        <div class="offer-image">
+            <span class="combo-emoji">🍔🍟🥤</span>
+        </div>
+    </section>
+
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <div class="section-header">
+            <span class="section-subtitle">TESTIMONIALS</span>
+            <h2 class="section-title">Trusted by Customers</h2>
+        </div>
+
+        <div class="testimonial-grid">
+            <div class="testimonial-card">
+                <div class="testimonial-rating">⭐⭐⭐⭐⭐</div>
+                <p class="testimonial-text">
+                    Best burger in town. Delivery was fast and everything arrived hot.
+                </p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">👤</div>
+                    <div class="author-info">
+                        <h4>John Doe</h4>
+                        <span>Regular Customer</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="testimonial-rating">⭐⭐⭐⭐⭐</div>
+                <p class="testimonial-text">
+                    Seamless payment and reliable service every time.
+                </p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">👤</div>
+                    <div class="author-info">
+                        <h4>Jane Smith</h4>
+                        <span>Food Enthusiast</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="testimonial-rating">⭐⭐⭐⭐</div>
+                <p class="testimonial-text">
+                    Great variety and fair pricing. Highly recommended.
+                </p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">👤</div>
+                    <div class="author-info">
+                        <h4>Mike Johnson</h4>
+                        <span>Business Professional</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- App Download -->
+    <section class="app-download">
+        <div class="app-content">
+            <h2>Download Our App</h2>
+            <p>Access exclusive deals and faster ordering.</p>
+            <div class="app-buttons">
+                <a href="#" class="app-button">
+                    <span class="app-icon">📱</span>
+                    <span class="app-text">App Store</span>
+                </a>
+                <a href="#" class="app-button">
+                    <span class="app-icon">🤖</span>
+                    <span class="app-text">Google Play</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer></footer>
+
+<button id="backToTop" class="back-to-top" title="Back to Top">↑</button>
+
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const formatKsh = (amount) => `KSh ${Number(amount || 0).toLocaleString('en-KE', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    })}`;
+
+    try {
+        const response = await api.getProducts(true);
+        const products = response.data;
+        const popularProducts = products.slice(0, 4);
+        const grid = document.getElementById('popular-products');
+
+        if (products.length === 0) {
+            grid.innerHTML = '<p class="no-items">No items available at the moment</p>';
+            return;
+        }
+
+        grid.innerHTML = popularProducts.map(product => `
+            <div class="product-card">
+                <div class="product-image">${product.image || '🍔'}</div>
+                <div class="product-content">
+                    <h3>${product.name}</h3>
+                    <div class="product-price">${formatKsh(product.price)}</div>
+                    <div class="product-rating">⭐⭐⭐⭐⭐</div>
+                    <button class="btn btn-primary btn-block" onclick="window.location.href='/login'">
+                        Order Now
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('Failed to load products:', error);
+        document.getElementById('popular-products').innerHTML =
+            '<p class="error-message">Failed to load products. Please refresh the page.</p>';
+    }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - FastFood</title>
+    <meta name="description" content="Create your FastFood account to order delicious food">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
+</head>
+<body class="auth-page">
+    <header></header>
+
+    <main class="auth-container">
+        <div class="auth-card animate-slide-up">
+            <div class="auth-header">
+                <div class="auth-logo">🍔</div>
+                <h2>Create Account</h2>
+                <p>Join us for delicious food delivery</p>
+            </div>
+            
+            <form id="registerForm" class="auth-form" novalidate>
+                <div class="form-group floating-label">
+                    <input type="text" id="name" name="name" required placeholder=" " autocomplete="name">
+                    <label for="name">Full Name</label>
+                    <span class="focus-border"></span>
+                    <span class="field-error" id="name-error"></span>
+                </div>
+                
+                <div class="form-group floating-label">
+                    <input type="email" id="email" name="email" required placeholder=" " autocomplete="email">
+                    <label for="email">Email Address</label>
+                    <span class="focus-border"></span>
+                    <span class="field-error" id="email-error"></span>
+                </div>
+                
+                <div class="form-group floating-label">
+                    <input type="tel" id="phone" name="phone" required placeholder=" " autocomplete="tel">
+                    <label for="phone">Phone Number</label>
+                    <span class="focus-border"></span>
+                    <span class="field-hint">Format: 0712345678 or +254712345678</span>
+                    <span class="field-error" id="phone-error"></span>
+                </div>
+                
+                <div class="form-group floating-label">
+                    <input type="password" id="password" name="password" required placeholder=" " autocomplete="new-password">
+                    <label for="password">Password</label>
+                    <span class="focus-border"></span>
+                    <button type="button" class="password-toggle" onclick="togglePassword('password')">👁️</button>
+                    <span class="field-hint">Min 6 characters with letters and numbers</span>
+                    <span class="field-error" id="password-error"></span>
+                    <!-- Password strength indicator -->
+                    <div class="password-strength" id="password-strength">
+                        <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+                        <span class="strength-text" id="strength-text"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group floating-label">
+                    <input type="password" id="confirmPassword" name="confirmPassword" required placeholder=" " autocomplete="new-password">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <span class="focus-border"></span>
+                    <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">👁️</button>
+                    <span class="field-error" id="confirmPassword-error"></span>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block btn-large">
+                    <span class="btn-text">Sign Up</span>
+                    <span class="btn-loader" style="display: none;">⏳</span>
+                </button>
+            </form>
+            
+            <p class="auth-footer">
+                Already have an account? <a href="/login" class="auth-link">Log In</a>
+            </p>
+        </div>
+    </main>
+
+    <footer></footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+        }
+
+        // Clear all field errors
+        function clearFieldErrors() {
+            document.querySelectorAll('.field-error').forEach(el => {
+                el.textContent = '';
+                el.style.display = 'none';
+            });
+            document.querySelectorAll('.form-group').forEach(el => {
+                el.classList.remove('has-error');
+            });
+        }
+
+        // Show field error
+        function showFieldError(fieldId, message) {
+            const errorEl = document.getElementById(fieldId + '-error');
+            const formGroup = document.getElementById(fieldId).closest('.form-group');
+            
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            }
+            if (formGroup) {
+                formGroup.classList.add('has-error');
+            }
+        }
+
+        // Clear specific field error
+        function clearFieldError(fieldId) {
+            const errorEl = document.getElementById(fieldId + '-error');
+            const formGroup = document.getElementById(fieldId).closest('.form-group');
+            
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+            if (formGroup) {
+                formGroup.classList.remove('has-error');
+            }
+        }
+
+        // Calculate password strength
+        function getPasswordStrength(password) {
+            let score = 0;
+            let feedback = '';
+            
+            if (!password) return { score: 0, feedback: '' };
+            
+            // Length checks
+            if (password.length >= 6) score += 1;
+            if (password.length >= 8) score += 1;
+            if (password.length >= 12) score += 1;
+            
+            // Character type checks
+            if (/[a-z]/.test(password)) score += 1;
+            if (/[A-Z]/.test(password)) score += 1;
+            if (/[0-9]/.test(password)) score += 1;
+            if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+            
+            // Feedback based on score
+            if (score <= 2) feedback = 'Weak';
+            else if (score <= 4) feedback = 'Medium';
+            else if (score <= 5) feedback = 'Strong';
+            else feedback = 'Very Strong';
+            
+            return { score, feedback };
+        }
+
+        // Update password strength indicator
+        function updatePasswordStrength(password) {
+            const strengthBar = document.getElementById('password-strength');
+            const strengthFill = document.getElementById('strength-fill');
+            const strengthText = document.getElementById('strength-text');
+            
+            if (!password) {
+                strengthBar.style.display = 'none';
+                return;
+            }
+            
+            const { score, feedback } = getPasswordStrength(password);
+            const percentage = (score / 7) * 100;
+            
+            strengthBar.style.display = 'block';
+            strengthFill.style.width = percentage + '%';
+            strengthText.textContent = feedback;
+            
+            // Color based on strength
+            if (score <= 2) {
+                strengthFill.style.backgroundColor = '#dc3545'; // Red
+            } else if (score <= 4) {
+                strengthFill.style.backgroundColor = '#ffc107'; // Yellow
+            } else {
+                strengthFill.style.backgroundColor = '#28a745'; // Green
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        // Client-side validation
+        function validateRegisterForm() {
+            clearFieldErrors();
+            let isValid = true;
+            
+            const name = document.getElementById('name');
+            const email = document.getElementById('email');
+            const phone = document.getElementById('phone');
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirmPassword');
+            
+            // Validate name
+            if (!name.value.trim()) {
+                showFieldError('name', 'Full name is required');
+                isValid = false;
+            } else if (name.value.trim().length < 2) {
+                showFieldError('name', 'Name must be at least 2 characters');
+                isValid = false;
+            } else if (name.value.trim().length > 50) {
+                showFieldError('name', 'Name cannot exceed 50 characters');
+                isValid = false;
+            } else if (!/^[a-zA-Z\s'-]+$/.test(name.value)) {
+                showFieldError('name', 'Name can only contain letters, spaces, hyphens, and apostrophes');
+                isValid = false;
+            }
+            
+            // Validate email
+            if (!email.value.trim()) {
+                showFieldError('email', 'Email address is required');
+                isValid = false;
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+                showFieldError('email', 'Please enter a valid email address');
+                isValid = false;
+            }
+            
+            // Validate phone
+            if (!phone.value.trim()) {
+                showFieldError('phone', 'Phone number is required');
+                isValid = false;
+            } else if (!/^(\+254|254|0)?[1-9]\d{8}$/.test(phone.value.replace(/\s/g, ''))) {
+                showFieldError('phone', 'Please enter a valid Kenyan phone number (e.g., 0712345678)');
+                isValid = false;
+            }
+            
+            // Validate password
+            if (!password.value) {
+                showFieldError('password', 'Password is required');
+                isValid = false;
+            } else if (password.value.length < 6) {
+                showFieldError('password', 'Password must be at least 6 characters');
+                isValid = false;
+            } else if (password.value.length > 100) {
+                showFieldError('password', 'Password cannot exceed 100 characters');
+                isValid = false;
+            } else if (!/\d/.test(password.value)) {
+                showFieldError('password', 'Password must contain at least one number');
+                isValid = false;
+            } else if (!/[a-zA-Z]/.test(password.value)) {
+                showFieldError('password', 'Password must contain at least one letter');
+                isValid = false;
+            }
+            
+            // Validate confirm password
+            if (!confirmPassword.value) {
+                showFieldError('confirmPassword', 'Please confirm your password');
+                isValid = false;
+            } else if (confirmPassword.value !== password.value) {
+                showFieldError('confirmPassword', 'Passwords do not match');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        // Enhanced form submission with validation
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Client-side validation first
+            if (!validateRegisterForm()) {
+                showToast('Please fix the errors below', 'error');
+                return;
+            }
+            
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                showFieldError('confirmPassword', 'Passwords do not match');
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+            
+            const userData = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim().toLowerCase(),
+                password: password,
+                phone: document.getElementById('phone').value.replace(/\s/g, '')
+            };
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoader = submitBtn.querySelector('.btn-loader');
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'inline-block';
+            
+            try {
+                const response = await api.register(userData);
+                
+                if (response.success) {
+                    showToast('Registration successful! Please login.', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1500);
+                } else {
+                    showToast(response.message || 'Registration failed', 'error');
+                    
+                    // Reset button
+                    submitBtn.disabled = false;
+                    btnText.style.display = 'inline';
+                    btnLoader.style.display = 'none';
+                }
+            } catch (error) {
+                // Handle validation errors from server
+                if (error.response && error.response.data && error.response.data.errors) {
+                    const errors = error.response.data.errors;
+                    errors.forEach(err => {
+                        if (err.field) {
+                            showFieldError(err.field, err.message);
+                        }
+                    });
+                    showToast('Please fix the errors below', 'error');
+                } else if (error.response && error.response.data && error.response.data.message) {
+                    showToast(error.response.data.message, 'error');
+                } else {
+                    showToast('Registration failed: ' + error.message, 'error');
+                }
+                
+                // Reset button
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoader.style.display = 'none';
+            }
+        });
+
+        // Real-time validation on blur
+        document.getElementById('name').addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                showFieldError('name', 'Full name is required');
+            } else if (this.value.trim().length < 2) {
+                showFieldError('name', 'Name must be at least 2 characters');
+            } else if (!/^[a-zA-Z\s'-]+$/.test(this.value)) {
+                showFieldError('name', 'Name can only contain letters, spaces, hyphens, and apostrophes');
+            } else {
+                clearFieldError('name');
+            }
+        });
+
+        document.getElementById('email').addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                showFieldError('email', 'Email address is required');
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value)) {
+                showFieldError('email', 'Please enter a valid email address');
+            } else {
+                clearFieldError('email');
+            }
+        });
+
+        document.getElementById('phone').addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                showFieldError('phone', 'Phone number is required');
+            } else if (!/^(\+254|254|0)?[1-9]\d{8}$/.test(this.value.replace(/\s/g, ''))) {
+                showFieldError('phone', 'Please enter a valid Kenyan phone number');
+            } else {
+                clearFieldError('phone');
+            }
+        });
+
+        document.getElementById('password').addEventListener('input', function() {
+            updatePasswordStrength(this.value);
+        });
+
+        document.getElementById('password').addEventListener('blur', function() {
+            if (!this.value) {
+                showFieldError('password', 'Password is required');
+            } else if (this.value.length < 6) {
+                showFieldError('password', 'Password must be at least 6 characters');
+            } else if (!/\d/.test(this.value)) {
+                showFieldError('password', 'Password must contain at least one number');
+            } else if (!/[a-zA-Z]/.test(this.value)) {
+                showFieldError('password', 'Password must contain at least one letter');
+            } else {
+                clearFieldError('password');
+            }
+        });
+
+        document.getElementById('confirmPassword').addEventListener('blur', function() {
+            const password = document.getElementById('password').value;
+            if (!this.value) {
+                showFieldError('confirmPassword', 'Please confirm your password');
+            } else if (this.value !== password) {
+                showFieldError('confirmPassword', 'Passwords do not match');
+            } else {
+                clearFieldError('confirmPassword');
+            }
+        });
+
+        // Add floating label animations
+        document.querySelectorAll('.floating-label input').forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', () => {
+                if (!input.value) {
+                    input.parentElement.classList.remove('focused');
+                }
+            });
+            
+            // Check initial value
+            if (input.value) {
+                input.parentElement.classList.add('focused');
+            }
+        });
+    </script>
+</body>
+</html>
+

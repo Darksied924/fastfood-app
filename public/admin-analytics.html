@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Analytics - FastFood</title>
+    <meta name="description" content="FastFood admin analytics dashboard">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
+</head>
+<body>
+    <header></header>
+
+    <main class="dashboard-container analytics-page">
+        <div class="dashboard-header">
+            <h1>Admin Analytics</h1>
+            <div class="user-role">ADMIN</div>
+        </div>
+
+        <section class="dashboard-card">
+            <h3>Filters & Export</h3>
+            <div class="analytics-controls">
+                <div class="analytics-filter-group">
+                    <label for="rangePreset">Preset</label>
+                    <select id="rangePreset">
+                        <option value="today">Today</option>
+                        <option value="week">Week</option>
+                        <option value="month" selected>Month</option>
+                        <option value="year">Year</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="analytics-filter-group">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="analytics-filter-group">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate">
+                </div>
+                <div class="analytics-filter-group">
+                    <label for="trendGranularity">Trend View</label>
+                    <select id="trendGranularity">
+                        <option value="daily" selected>Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                <div class="analytics-action-group">
+                    <button class="btn btn-primary" id="applyFiltersBtn">Apply</button>
+                    <button class="btn btn-secondary" id="resetFiltersBtn">Reset</button>
+                    <button class="btn btn-secondary" id="exportCsvBtn">Export CSV</button>
+                    <button class="btn btn-secondary" id="exportPdfBtn">Export PDF</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-card">
+            <h3>Sales Overview</h3>
+            <div class="kpi-grid" id="kpiGrid"></div>
+        </section>
+
+        <section class="dashboard-card">
+            <h3>Visualizations</h3>
+            <div class="analytics-chart-grid">
+                <div class="chart-card"><h4>Sales Trend</h4><canvas id="salesTrendChart"></canvas></div>
+                <div class="chart-card"><h4>Revenue vs Expenses</h4><canvas id="revenueExpensesChart"></canvas></div>
+                <div class="chart-card"><h4>Sales by Category</h4><canvas id="salesCategoryChart"></canvas></div>
+                <div class="chart-card"><h4>Top Selling Products</h4><canvas id="topProductsChart"></canvas></div>
+                <div class="chart-card chart-card-wide"><h4>Product Comparison</h4><canvas id="productComparisonChart"></canvas></div>
+            </div>
+        </section>
+
+        <section class="dashboard-card analytics-split-grid">
+            <div>
+                <h3>Expense Tracking</h3>
+                <div id="expenseSummary"></div>
+                <div id="expenseBreakdown"></div>
+            </div>
+            <div>
+                <h3>Sales Insights</h3>
+                <div id="salesInsights"></div>
+            </div>
+        </section>
+
+        <section class="dashboard-card analytics-split-grid">
+            <div>
+                <h3>Delivery Staff Performance</h3>
+                <div id="deliveryPerformance"></div>
+            </div>
+            <div>
+                <h3>Customer Analytics</h3>
+                <div id="customerAnalytics"></div>
+            </div>
+        </section>
+
+        <section class="dashboard-card">
+            <h3>High-Value Additional Analytics</h3>
+            <div id="additionalAnalytics"></div>
+            <div class="heatmap-wrap">
+                <h4>Peak Ordering Hours Heatmap</h4>
+                <div id="peakHoursHeatmap"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/admin-analytics.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

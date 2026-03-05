@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart - FastFood</title>
+    <meta name="description" content="Review cart items and checkout">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header></header>
+
+    <main class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>Welcome, <span id="userName">User</span>!</h1>
+            <div class="user-role" id="userRole">CUSTOMER</div>
+        </div>
+
+        <div class="dashboard-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:0.8rem; flex-wrap:wrap;">
+                <h3 style="margin:0; border-bottom:none; padding:0;">🛒 Your Cart</h3>
+                <div style="display:flex; gap:0.6rem;">
+                    <a class="btn btn-secondary" href="/customer/menu">Back to Menu</a>
+                    <a class="btn btn-primary" href="/customer/orders">My Orders</a>
+                </div>
+            </div>
+
+            <div id="cart-items"></div>
+            <div class="cart-total">
+                <strong>Total:</strong> <span id="cart-total">KSh 0</span>
+            </div>
+            <div class="cart-actions">
+                <button class="btn btn-primary" id="checkoutBtn" onclick="checkout()">Checkout</button>
+                <button class="btn btn-secondary" onclick="clearCart()">Clear Cart</button>
+            </div>
+        </div>
+    </main>
+
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('paymentModal')">&times;</span>
+            <h3>💳 Simulate M-Pesa Payment</h3>
+            <p>Order Total: <span id="paymentAmount">KSh 0</span></p>
+            <form id="paymentForm">
+                <input type="hidden" id="orderId" name="orderId">
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" placeholder="254712345678" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Simulate STK Push</button>
+            </form>
+        </div>
+    </div>
+
+    <a href="/customer/cart" class="floating-cart-btn" id="floatingCartBtn" aria-label="Go to cart">
+        <span class="floating-cart-icon">🛒</span>
+        <span class="floating-cart-label">Go to Cart</span>
+        <span class="floating-cart-count" id="floatingCartCount">0</span>
+    </a>
+
+    <footer></footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/cart.js"></script>
+    <script src="/js/customer.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
