@@ -1279,3 +1279,184 @@
 {"level":"info","message":"GET /api/products","service":"fastfood-app","timestamp":"2026-03-05 22:48:11"}
 {"level":"info","message":"GET /admin/users","service":"fastfood-app","timestamp":"2026-03-05 22:48:45"}
 {"level":"info","message":"GET /api/users","service":"fastfood-app","timestamp":"2026-03-05 22:48:45"}
+{"level":"info","message":"GET /api/products?available=true","service":"fastfood-app","timestamp":"2026-03-05 22:55:13"}
+{"level":"info","message":"GET /login","service":"fastfood-app","timestamp":"2026-03-05 22:55:52"}
+{"level":"info","message":"POST /api/auth/login","service":"fastfood-app","timestamp":"2026-03-05 22:56:01"}
+{"level":"info","message":"User logged in: manager1@gmail.com","service":"fastfood-app","timestamp":"2026-03-05 22:56:01"}
+{"level":"info","message":"GET /dashboard","service":"fastfood-app","timestamp":"2026-03-05 22:56:02"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-05 22:56:02"}
+{"level":"info","message":"GET /api/orders?status=paid","service":"fastfood-app","timestamp":"2026-03-05 22:56:02"}
+{"level":"info","message":"GET /api/orders?status=preparing","service":"fastfood-app","timestamp":"2026-03-05 22:56:06"}
+{"level":"info","message":"GET /api/orders?status=out_for_delivery","service":"fastfood-app","timestamp":"2026-03-05 22:56:07"}
+{"level":"info","message":"GET /api/orders?status=delivered","service":"fastfood-app","timestamp":"2026-03-05 22:56:08"}
+{"level":"info","message":"GET /profile","service":"fastfood-app","timestamp":"2026-03-05 22:56:20"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-05 22:56:20"}
+{"level":"info","message":"GET /dashboard","service":"fastfood-app","timestamp":"2026-03-05 22:56:58"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-05 22:56:58"}
+{"level":"info","message":"GET /api/orders?status=paid","service":"fastfood-app","timestamp":"2026-03-05 22:56:58"}
+{"level":"info","message":"GET /dashboard","service":"fastfood-app","timestamp":"2026-03-05 22:57:20"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-05 22:57:21"}
+{"level":"info","message":"GET /api/orders?status=paid","service":"fastfood-app","timestamp":"2026-03-05 22:57:21"}
+{"level":"info","message":"GET /api/products?available=true","service":"fastfood-app","timestamp":"2026-03-05 22:57:39"}
+{"level":"info","message":"GET /login","service":"fastfood-app","timestamp":"2026-03-05 22:57:44"}
+{"level":"info","message":"POST /api/auth/login","service":"fastfood-app","timestamp":"2026-03-05 22:57:50"}
+{"level":"info","message":"User logged in: veelin35@gmail.com","service":"fastfood-app","timestamp":"2026-03-05 22:57:50"}
+{"level":"info","message":"GET /customer/menu","service":"fastfood-app","timestamp":"2026-03-05 22:57:51"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-05 22:57:51"}
+{"level":"info","message":"GET /api/products?available=true","service":"fastfood-app","timestamp":"2026-03-05 22:57:51"}
+{"level":"info","message":"GET /customer/cart","service":"fastfood-app","timestamp":"2026-03-05 22:58:16"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-05 22:58:16"}
+{"level":"info","message":"GET /customer/menu","service":"fastfood-app","timestamp":"2026-03-05 22:58:29"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-05 22:58:29"}
+{"level":"info","message":"GET /api/products?available=true","service":"fastfood-app","timestamp":"2026-03-05 22:58:29"}
+{"level":"info","message":"Database connected successfully","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"info","message":"Server running in development mode on port 3000","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"info","message":"Web app: http://localhost:3000","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"error","message":"UNCAUGHT EXCEPTION! 💥 Shutting down...","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"0":"E","1":"I","10":"r","11":"r","12":"o","13":"r","14":",","15":" ","16":"w","17":"r","18":"i","19":"t","2":"O","20":"e","3":":","4":" ","5":"i","6":"/","7":"o","8":" ","9":"e","level":"error","message":"Error","service":"fastfood-app","timestamp":"2026-03-05 22:58:40"}
+{"level":"info","message":"Database connected successfully","service":"fastfood-app","timestamp":"2026-03-06 18:39:01"}
+{"level":"info","message":"Server running in development mode on port 3000","service":"fastfood-app","timestamp":"2026-03-06 18:39:01"}
+{"level":"info","message":"Web app: http://localhost:3000","service":"fastfood-app","timestamp":"2026-03-06 18:39:01"}
+{"level":"info","message":"GET /api/products?available=true","service":"fastfood-app","timestamp":"2026-03-06 18:39:10"}
+{"level":"info","message":"GET /login","service":"fastfood-app","timestamp":"2026-03-06 18:39:16"}
+{"level":"info","message":"GET /profile","service":"fastfood-app","timestamp":"2026-03-06 18:39:26"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-06 18:39:26"}
+{"level":"info","message":"GET /favicon.ico","service":"fastfood-app","timestamp":"2026-03-06 18:39:26"}
+{"level":"info","message":"GET /dashboard","service":"fastfood-app","timestamp":"2026-03-06 18:39:34"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-06 18:39:34"}
+{"level":"info","message":"GET /customer/menu","service":"fastfood-app","timestamp":"2026-03-06 18:39:34"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-06 18:39:36"}
+{"level":"info","message":"GET /api/products?available=true","service":"fastfood-app","timestamp":"2026-03-06 18:39:36"}
+{"level":"info","message":"GET /api/products?available=true","service":"fastfood-app","timestamp":"2026-03-06 18:39:47"}
+{"level":"info","message":"GET /login","service":"fastfood-app","timestamp":"2026-03-06 18:39:48"}
+{"level":"info","message":"POST /api/auth/login","service":"fastfood-app","timestamp":"2026-03-06 18:39:56"}
+{"level":"info","message":"User logged in: cheruiyotfelix924@gmail.com","service":"fastfood-app","timestamp":"2026-03-06 18:39:56"}
+{"level":"info","message":"GET /dashboard","service":"fastfood-app","timestamp":"2026-03-06 18:39:57"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-06 18:39:58"}
+{"level":"info","message":"GET /api/orders/analytics?preset=today","service":"fastfood-app","timestamp":"2026-03-06 18:39:58"}
+{"level":"info","message":"GET /admin/orders","service":"fastfood-app","timestamp":"2026-03-06 18:40:01"}
+{"level":"info","message":"GET /api/orders","service":"fastfood-app","timestamp":"2026-03-06 18:40:01"}
+{"level":"info","message":"GET /api/orders/analytics?preset=today","service":"fastfood-app","timestamp":"2026-03-06 18:40:05"}
+{"level":"info","message":"GET /admin/analytics","service":"fastfood-app","timestamp":"2026-03-06 18:40:11"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 18:40:11"}
+{"level":"info","message":"GET /admin/products","service":"fastfood-app","timestamp":"2026-03-06 18:40:40"}
+{"level":"info","message":"GET /api/products","service":"fastfood-app","timestamp":"2026-03-06 18:40:41"}
+{"level":"info","message":"GET /admin/users","service":"fastfood-app","timestamp":"2026-03-06 18:40:48"}
+{"level":"info","message":"GET /api/users","service":"fastfood-app","timestamp":"2026-03-06 18:40:48"}
+{"level":"info","message":"GET /dashboard","service":"fastfood-app","timestamp":"2026-03-06 18:40:56"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-06 18:40:56"}
+{"level":"info","message":"GET /api/orders/analytics?preset=today","service":"fastfood-app","timestamp":"2026-03-06 18:40:57"}
+{"level":"info","message":"GET /profile","service":"fastfood-app","timestamp":"2026-03-06 18:41:00"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-06 18:41:00"}
+{"level":"info","message":"GET /api/products?available=true","service":"fastfood-app","timestamp":"2026-03-06 18:41:20"}
+{"level":"info","message":"Database connected successfully","service":"fastfood-app","timestamp":"2026-03-06 18:57:10"}
+{"level":"info","message":"Server running in development mode on port 3000","service":"fastfood-app","timestamp":"2026-03-06 18:57:10"}
+{"level":"info","message":"Web app: http://localhost:3000","service":"fastfood-app","timestamp":"2026-03-06 18:57:10"}
+{"level":"info","message":"GET /api/products?available=true","service":"fastfood-app","timestamp":"2026-03-06 18:57:15"}
+{"level":"info","message":"GET /login","service":"fastfood-app","timestamp":"2026-03-06 18:57:24"}
+{"level":"info","message":"POST /api/auth/login","service":"fastfood-app","timestamp":"2026-03-06 18:57:27"}
+{"level":"info","message":"User logged in: cheruiyotfelix924@gmail.com","service":"fastfood-app","timestamp":"2026-03-06 18:57:27"}
+{"level":"info","message":"GET /dashboard","service":"fastfood-app","timestamp":"2026-03-06 18:57:28"}
+{"level":"info","message":"GET /api/auth/me","service":"fastfood-app","timestamp":"2026-03-06 18:57:29"}
+{"level":"info","message":"GET /api/orders/analytics?preset=today","service":"fastfood-app","timestamp":"2026-03-06 18:57:29"}
+{"level":"info","message":"GET /admin/analytics","service":"fastfood-app","timestamp":"2026-03-06 18:57:37"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 18:57:37"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 18:58:09"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 18:58:39"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 18:59:09"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 18:59:39"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:00:09"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:00:39"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:01:09"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:01:49"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:02:49"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:03:49"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:04:49"}
+{"level":"info","message":"Database connected successfully","service":"fastfood-app","timestamp":"2026-03-06 19:05:21"}
+{"level":"info","message":"Server running in development mode on port 3000","service":"fastfood-app","timestamp":"2026-03-06 19:05:21"}
+{"level":"info","message":"Web app: http://localhost:3000","service":"fastfood-app","timestamp":"2026-03-06 19:05:21"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:05:49"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:06:19"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:06:39"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:07:09"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:07:49"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:08:49"}
+{"level":"info","message":"GET /api/orders/analytics?preset=month&granularity=daily","service":"fastfood-app","timestamp":"2026-03-06 19:09:49"}
