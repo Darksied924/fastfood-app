@@ -20,9 +20,10 @@ class OrderService {
      * @param {Array} items - Order items
      * @param {number} total - Order total
      * @param {string} phone - Customer phone
+     * @param {string} deliveryAddress - Delivery address
      * @returns {Promise<Object>} Created order
      */
-    async createOrder(userId, items, total, phone) {
+    async createOrder(userId, items, total, phone, deliveryAddress) {
         const connection = await db.getConnection();
         
         try {
@@ -30,8 +31,8 @@ class OrderService {
 
             // Create order
             const [orderResult] = await connection.execute(
-                'INSERT INTO orders (user_id, total, phone, status) VALUES (?, ?, ?, ?)',
-                [userId, total, phone, 'pending']
+                'INSERT INTO orders (user_id, total, phone, delivery_address, status) VALUES (?, ?, ?, ?, ?)',
+                [userId, total, phone, deliveryAddress, 'pending']
             );
 
             const orderId = orderResult.insertId;

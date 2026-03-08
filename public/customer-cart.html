@@ -32,16 +32,19 @@
     <main class="dashboard-container">
         <div class="dashboard-header">
             <h1>Welcome, <span id="userName">User</span>!</h1>
-            <div class="user-role" id="userRole">CUSTOMER</div>
+            <div class="header-actions">
+                <a href="/customer/menu" class="btn btn-secondary header-action-btn" data-tooltip="Browse more menu items">Menu</a>
+                <a href="/customer/orders" class="btn btn-secondary header-action-btn" data-tooltip="View your order history">My Orders</a>
+                <a href="/customer/cart" class="header-cart-btn" id="headerCartBtn" aria-label="Go to cart" data-tooltip="View your cart and checkout">
+                    <span class="header-cart-icon">🛒</span>
+                    <span class="header-cart-count" id="headerCartCount">0</span>
+                </a>
+            </div>
         </div>
 
         <div class="dashboard-card">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:0.8rem; flex-wrap:wrap;">
                 <h3 style="margin:0; border-bottom:none; padding:0;">🛒 Your Cart</h3>
-                <div style="display:flex; gap:0.6rem;">
-                    <a class="btn btn-secondary" href="/customer/menu" data-tooltip="Browse more menu items">Back to Menu</a>
-                    <a class="btn btn-primary" href="/customer/orders" data-tooltip="View your order history">My Orders</a>
-                </div>
             </div>
 
             <div id="cart-items"></div>
@@ -49,11 +52,37 @@
                 <strong>Total:</strong> <span id="cart-total">KSh 0</span>
             </div>
             <div class="cart-actions">
-                <button class="btn btn-primary" id="checkoutBtn" onclick="checkout()" data-tooltip="Proceed to payment">Checkout</button>
+                <button class="btn btn-primary" id="checkoutBtn" onclick="cart.showDeliveryForm()" data-tooltip="Proceed to delivery details">Checkout</button>
                 <button class="btn btn-secondary" onclick="clearCart()" data-tooltip="Remove all items from cart">Clear Cart</button>
             </div>
         </div>
     </main>
+
+    <!-- Delivery Form Modal -->
+    <div id="deliveryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('deliveryModal')" data-tooltip="Close this dialog">&times;</span>
+            <h3>🚚 Delivery Details</h3>
+            <p>Please provide your delivery information to proceed with the order.</p>
+            <form id="deliveryForm">
+                <div class="form-group">
+                    <label for="deliveryPhone">Phone Number *</label>
+                    <input type="tel" id="deliveryPhone" name="phone" placeholder="254712345678" required aria-describedby="delivery-phone-hint">
+                    <span id="delivery-phone-hint" class="field-hint">Enter the phone number registered with M-Pesa for payment</span>
+                </div>
+                <div class="form-group">
+                    <label for="deliveryAddress">Delivery Address *</label>
+                    <textarea id="deliveryAddress" name="deliveryAddress" placeholder="Enter your complete delivery address (e.g., Building, Street, Landmark)" required rows="3" aria-describedby="delivery-address-hint"></textarea>
+                    <span id="delivery-address-hint" class="field-hint">We'll deliver your order to this address</span>
+                </div>
+                <div class="order-summary">
+                    <h4>Order Summary</h4>
+                    <p><strong>Total:</strong> <span id="deliveryOrderTotal">KSh 0</span></p>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Confirm details and proceed to payment">Confirm & Proceed to Payment</button>
+            </form>
+        </div>
+    </div>
 
     <div id="paymentModal" class="modal">
         <div class="modal-content">
@@ -71,12 +100,6 @@
             </form>
         </div>
     </div>
-
-    <a href="/customer/cart" class="floating-cart-btn" id="floatingCartBtn" aria-label="Go to cart" data-tooltip="View your cart and checkout">
-        <span class="floating-cart-icon">🛒</span>
-        <span class="floating-cart-label">Go to Cart</span>
-        <span class="floating-cart-count" id="floatingCartCount">0</span>
-    </a>
 
     <footer></footer>
 

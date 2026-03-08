@@ -72,6 +72,13 @@ const ensureOrdersSchema = async (connection) => {
     'manager_read_at',
     'ALTER TABLE orders ADD COLUMN manager_read_at DATETIME NULL AFTER updated_at'
   );
+
+  await ensureTableColumn(
+    connection,
+    'orders',
+    'delivery_address',
+    'ALTER TABLE orders ADD COLUMN delivery_address VARCHAR(500) NULL AFTER phone'
+  );
 };
 
 const ensureProductsSchema = async (connection) => {

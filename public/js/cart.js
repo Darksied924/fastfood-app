@@ -164,10 +164,10 @@ const cart = {
         }, 3000);
     },
 
-    // Checkout
-    async checkout() {
+    // Show delivery form modal
+    showDeliveryForm() {
         if (!auth.isAuthenticated()) {
-            window.location.href = '/login?redirect=dashboard';
+            window.location.href = '/login?redirect=cart';
             return;
         }
 
@@ -177,12 +177,23 @@ const cart = {
             return;
         }
 
-        const user = auth.getCurrentUser();
-        
-        // Get user's phone (in a real app, you'd have this saved)
-        const phone = prompt('Enter your phone number for delivery:', '254712345678');
-        if (!phone) return;
+        // Update order total in the delivery modal
+        const deliveryOrderTotal = document.getElementById('deliveryOrderTotal');
+        if (deliveryOrderTotal) {
+            deliveryOrderTotal.textContent = this.formatKsh(this.getTotal());
+        }
 
+        // Show delivery modal
+        const deliveryModal = document.getElementById('deliveryModal');
+        if (deliveryModal) {
+            deliveryModal.style.display = 'block';
+        }
+    },
+
+    // Process delivery form and create order
+    async processDeliveryForm(phone, deliveryAddress) {
+        const cart = this.getCart();
+        
         const orderData = {
             items: cart.map(item => ({
                 id: item.id,
@@ -190,13 +201,21 @@ const cart = {
                 price: item.price
             })),
             total: this.getTotal(),
-            phone: phone
+            phone: phone,
+            deliveryAddress: deliveryAddress
         };
 
         try {
             const response = await api.createOrder(orderData);
             
             if (response.success) {
+                // Close delivery modal
+                const deliveryModal = document.getElementById('deliveryModal');
+                if (deliveryModal) {
+                    deliveryModal.style.display = 'none';
+                }
+                
+                // Clear cart after successful order
                 this.clearCart();
                 
                 // Show payment modal for the new order
@@ -205,15 +224,26 @@ const cart = {
                 const paymentAmount = document.getElementById('paymentAmount');
                 
                 orderIdInput.value = response.data.id;
-                paymentAmount.textContent = response.data.total;
+                paymentAmount.textContent = this.formatKsh(response.data.total);
+                
+                // Pre-fill phone in payment form
+                const phoneInput = document.getElementById('phone');
+                if (phoneInput) {
+                    phoneInput.value = phone;
+                }
                 
                 paymentModal.style.display = 'block';
                 
-                this.showNotification('Order created successfully! Please complete payment.');
+                this.showNotification('Order created! Please complete payment.');
             }
         } catch (error) {
             this.showNotification('Failed to create order: ' + error.message);
         }
+    },
+
+    // Legacy checkout function (kept for compatibility)
+    async checkout() {
+        this.showDeliveryForm();
     }
 };
 
@@ -266,6 +296,25 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 alert('Payment failed: ' + error.message);
             }
+        });
+    }
+
+    // Delivery form handler
+    const deliveryForm = document.getElementById('deliveryForm');
+    if (deliveryForm) {
+        deliveryForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const phone = document.getElementById('deliveryPhone').value;
+            const deliveryAddress = document.getElementById('deliveryAddress').value;
+            
+            if (!phone || !deliveryAddress) {
+                cart.showNotification('Please fill in all required fields');
+                return;
+            }
+            
+            // Process the delivery form and create order
+            await cart.processDeliveryForm(phone, deliveryAddress);
         });
     }
 });

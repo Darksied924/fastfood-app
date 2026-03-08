@@ -32,20 +32,29 @@
     <main class="dashboard-container">
         <div class="dashboard-header">
             <h1>Welcome, <span id="userName">User</span>!</h1>
-            <div class="user-role" id="userRole">CUSTOMER</div>
+            <div class="header-actions">
+                <a href="/customer/menu" class="btn btn-secondary header-action-btn" data-tooltip="Browse menu items">Menu</a>
+                <a href="/customer/cart" class="header-cart-btn" id="headerCartBtn" aria-label="Go to cart" data-tooltip="View your cart and checkout">
+                    <span class="header-cart-icon">🛒</span>
+                    <span class="header-cart-count" id="headerCartCount">0</span>
+                </a>
+            </div>
         </div>
 
         <div class="dashboard-card">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:0.8rem; flex-wrap:wrap;">
                 <h3 style="margin:0; border-bottom:none; padding:0;">📋 My Orders</h3>
-                <div style="display:flex; gap:0.6rem;">
-                    <a class="btn btn-secondary" href="/customer/menu" data-tooltip="Browse menu items">Menu</a>
-                    <a class="btn btn-primary" href="/customer/cart" data-tooltip="View your cart">Cart</a>
-                </div>
             </div>
             <div id="customer-orders"></div>
         </div>
     </main>
+
+    <!-- Floating Cart Button -->
+    <a href="/customer/cart" class="floating-cart-btn" id="floatingCartBtn" aria-label="Go to cart">
+        <span class="floating-cart-icon">🛒</span>
+        <span class="floating-cart-label">Go to Cart</span>
+        <span class="floating-cart-count" id="floatingCartCount">0</span>
+    </a>
 
     <div id="paymentModal" class="modal">
         <div class="modal-content">
@@ -63,12 +72,6 @@
             </form>
         </div>
     </div>
-
-    <a href="/customer/cart" class="floating-cart-btn" id="floatingCartBtn" aria-label="Go to cart" data-tooltip="View your cart and checkout">
-        <span class="floating-cart-icon">🛒</span>
-        <span class="floating-cart-label">Go to Cart</span>
-        <span class="floating-cart-count" id="floatingCartCount">0</span>
-    </a>
 
     <footer></footer>
 

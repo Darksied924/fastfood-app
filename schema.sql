@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS orders (
   delivery_id INT UNSIGNED NULL,
   total DECIMAL(10, 2) NOT NULL,
   phone VARCHAR(20) NULL,
+  delivery_address VARCHAR(500) NULL,
   status ENUM('pending', 'paid', 'preparing', 'out_for_delivery', 'delivered') NOT NULL DEFAULT 'pending',
   mpesa_receipt VARCHAR(100) NULL UNIQUE,
   notes TEXT NULL,

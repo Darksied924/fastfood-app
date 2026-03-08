@@ -39,33 +39,54 @@ function renderCustomerHeader() {
 }
 
 function initializeFloatingCartButton() {
+    const headerCartButton = document.getElementById('headerCartBtn');
+    const headerCartCount = document.getElementById('headerCartCount');
     const floatingCartButton = document.getElementById('floatingCartBtn');
     const floatingCartCount = document.getElementById('floatingCartCount');
 
-    if (!floatingCartButton || !floatingCartCount) return;
-
-    const updateFloatingCount = (countOverride = null) => {
+    // Update both header and floating cart buttons
+    const updateCartCounts = (countOverride = null) => {
         const itemCount = countOverride === null ? cart.getItemCount() : countOverride;
-        floatingCartCount.textContent = String(itemCount);
-        floatingCartButton.classList.toggle('has-items', itemCount > 0);
+        
+        // Update header cart button if exists
+        if (headerCartButton && headerCartCount) {
+            headerCartCount.textContent = String(itemCount);
+            headerCartButton.classList.toggle('has-items', itemCount > 0);
+        }
+        
+        // Update floating cart button if exists
+        if (floatingCartButton && floatingCartCount) {
+            floatingCartCount.textContent = String(itemCount);
+            floatingCartButton.classList.toggle('has-items', itemCount > 0);
+        }
     };
 
-    const animateFloatingButton = () => {
-        floatingCartButton.classList.remove('cart-bump');
-        void floatingCartButton.offsetWidth;
-        floatingCartButton.classList.add('cart-bump');
+    const animateCartButtons = () => {
+        // Animate header cart button if exists
+        if (headerCartButton) {
+            headerCartButton.classList.remove('cart-bump');
+            void headerCartButton.offsetWidth;
+            headerCartButton.classList.add('cart-bump');
+        }
+        
+        // Animate floating cart button if exists
+        if (floatingCartButton) {
+            floatingCartButton.classList.remove('cart-bump');
+            void floatingCartButton.offsetWidth;
+            floatingCartButton.classList.add('cart-bump');
+        }
     };
 
-    updateFloatingCount();
+    updateCartCounts();
 
     window.addEventListener('cart:updated', (event) => {
         const count = event.detail && typeof event.detail.count === 'number' ? event.detail.count : null;
-        updateFloatingCount(count);
+        updateCartCounts(count);
     });
 
     window.addEventListener('cart:item-added', () => {
-        updateFloatingCount();
-        animateFloatingButton();
+        updateCartCounts();
+        animateCartButtons();
     });
 }
 
@@ -177,3 +198,8 @@ function clearCart() {
         cart.clearCart();
     }
 }
+
+// Expose functions globally
+window.checkout = checkout;
+window.clearCart = clearCart;
+window.closeModal = closeModal;

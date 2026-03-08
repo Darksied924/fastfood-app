@@ -83,6 +83,7 @@ function renderOrdersTable(orders) {
                 <tr>
                     <th>Order ID</th>
                     <th>Customer</th>
+                    <th>Address</th>
                     <th>Total</th>
                     <th>Status</th>
                     <th>Read</th>
@@ -96,6 +97,7 @@ function renderOrdersTable(orders) {
                     <tr>
                         <td>#${order.id}</td>
                         <td>${order.customer_name || '-'}</td>
+                        <td>${order.delivery_address || 'N/A'}</td>
                         <td>${formatKsh(order.total)}</td>
                         <td><span class="status-badge status-${order.status}">${order.status}</span></td>
                         <td>${getReadBadge(order.manager_read_at)}</td>

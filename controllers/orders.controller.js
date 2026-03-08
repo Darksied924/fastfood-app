@@ -7,7 +7,7 @@ const orderService = require('../services/order.service');
 // @desc    Create new order
 // @route   POST /api/orders
 const createOrder = asyncHandler(async (req, res) => {
-  const { items, total, phone } = req.body;
+  const { items, total, phone, deliveryAddress } = req.body;
   const userId = req.user.id;
 
   if (!items || items.length === 0) {
@@ -15,7 +15,7 @@ const createOrder = asyncHandler(async (req, res) => {
   }
 
   // Create order with transaction
-  const order = await orderService.createOrder(userId, items, total, phone);
+  const order = await orderService.createOrder(userId, items, total, phone, deliveryAddress);
 
   logger.info(`Order created: ${order.id} by user: ${userId}`);
 
@@ -31,7 +31,8 @@ const getAllOrders = asyncHandler(async (req, res) => {
     SELECT o.*, 
            u.name as customer_name, 
            u.email as customer_email,
-           d.name as delivery_name
+           d.name as delivery_name,
+           o.delivery_address
     FROM orders o
     LEFT JOIN users u ON o.user_id = u.id
     LEFT JOIN users d ON o.delivery_id = d.id
@@ -68,8 +69,10 @@ const getAllOrders = asyncHandler(async (req, res) => {
 const getMyOrders = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
+  // Select only columns that exist in the orders table schema
+  // This query is resilient to missing columns in the database
   const orders = await db.query(
-    `SELECT o.*, 
+    `SELECT o.id, o.user_id, o.delivery_id, o.total, o.status, o.created_at, o.updated_at,
             d.name as delivery_name
      FROM orders o
      LEFT JOIN users d ON o.delivery_id = d.id
@@ -80,14 +83,19 @@ const getMyOrders = asyncHandler(async (req, res) => {
 
   // Get items for each order
   for (let order of orders) {
-    const items = await db.query(
-      `SELECT oi.*, p.name as product_name, p.image 
-       FROM order_items oi
-       JOIN products p ON oi.product_id = p.id
-       WHERE oi.order_id = ?`,
-      [order.id]
-    );
-    order.items = items;
+    try {
+      const items = await db.query(
+        `SELECT oi.id, oi.product_id, oi.quantity, oi.price, p.name as product_name, p.image 
+         FROM order_items oi
+         JOIN products p ON oi.product_id = p.id
+         WHERE oi.order_id = ?`,
+        [order.id]
+      );
+      order.items = items;
+    } catch (itemError) {
+      logger.error('Error fetching order items:', itemError);
+      order.items = [];
+    }
   }
 
   successResponse(res, orders);
@@ -124,6 +132,25 @@ const getOrder = asyncHandler(async (req, res) => {
     return errorResponse(res, 'Not authorized to view this order', 403);
   }
 
+  // Role-based visibility for delivery address and order value
+  const isAuthorizedRole = ['admin', 'manager'].includes(userRole);
+  const isAssignedDelivery = userRole === 'delivery' && order.delivery_id === userId;
+  
+  if (isAuthorizedRole || isAssignedDelivery) {
+    order.delivery_address = order.delivery_address;
+  } else {
+    // Remove delivery_address for unauthorized roles
+    delete order.delivery_address;
+  }
+
+  // Remove order value and payment details for delivery personnel
+  if (userRole === 'delivery') {
+    delete order.total;
+    delete order.phone;
+    delete order.mpesa_receipt;
+    delete order.notes;
+  }
+
   // Get order items
   const items = await db.query(
     `SELECT oi.*, p.name as product_name, p.image 
@@ -133,7 +160,16 @@ const getOrder = asyncHandler(async (req, res) => {
     [id]
   );
 
-  order.items = items;
+  // Remove price from items for delivery personnel
+  if (userRole === 'delivery') {
+    order.items = items.map(item => ({
+      quantity: item.quantity,
+      product_name: item.product_name,
+      image: item.image
+    }));
+  } else {
+    order.items = items;
+  }
 
   successResponse(res, order);
 });
@@ -251,9 +287,10 @@ const getAssignedOrders = asyncHandler(async (req, res) => {
   const deliveryId = req.user.id;
 
   const orders = await db.query(
-    `SELECT o.*, 
+    `SELECT o.id, o.user_id, o.delivery_id, o.status, o.delivery_address, o.created_at, o.updated_at,
             u.name as customer_name,
-            u.email as customer_email
+            u.email as customer_email,
+            u.phone as customer_phone
      FROM orders o
      JOIN users u ON o.user_id = u.id
      WHERE o.delivery_id = ? AND o.status = 'out_for_delivery'
@@ -261,16 +298,21 @@ const getAssignedOrders = asyncHandler(async (req, res) => {
     [deliveryId]
   );
 
-  // Get items for each order
+  // Get items for each order (without prices - delivery personnel cannot see payment details)
   for (let order of orders) {
     const items = await db.query(
-      `SELECT oi.*, p.name as product_name, p.image 
+      `SELECT oi.quantity, p.name as product_name, p.image 
        FROM order_items oi
        JOIN products p ON oi.product_id = p.id
        WHERE oi.order_id = ?`,
       [order.id]
     );
     order.items = items;
+    // Remove total field - delivery personnel should not see order value
+    delete order.total;
+    delete order.phone;
+    delete order.mpesa_receipt;
+    delete order.notes;
   }
 
   successResponse(res, orders);
@@ -420,8 +462,7 @@ const getDeliveryDashboard = asyncHandler(async (req, res) => {
       SELECT
         o.id,
         u.name AS customer_name,
-        COALESCE(NULLIF(TRIM(o.phone), ''), 'N/A') AS address,
-        o.total,
+        COALESCE(NULLIF(TRIM(o.delivery_address), ''), 'N/A') AS address,
         o.updated_at AS assigned_at,
         o.status,
         o.created_at,
@@ -440,8 +481,7 @@ const getDeliveryDashboard = asyncHandler(async (req, res) => {
       SELECT
         o.id,
         u.name AS customer_name,
-        COALESCE(NULLIF(TRIM(o.phone), ''), 'N/A') AS address,
-        o.total,
+        COALESCE(NULLIF(TRIM(o.delivery_address), ''), 'N/A') AS address,
         COALESCE(o.manager_read_at, o.created_at) AS assigned_at,
         o.updated_at AS delivered_at,
         TIMESTAMPDIFF(MINUTE, o.created_at, o.updated_at) AS delivery_duration_minutes,
@@ -666,11 +706,11 @@ const getDeliveryDashboard = asyncHandler(async (req, res) => {
       search
     },
     ordersOverview: {
+      // Note: orderValue is NOT included for delivery personnel - they should not see payment details
       assignedOrders: assignedOrders.map((order) => ({
         id: order.id,
         customerName: order.customer_name,
         address: order.address,
-        orderValue: toNumber(order.total),
         assignedAt: order.assigned_at,
         status: order.status,
         createdAt: order.created_at,
@@ -680,7 +720,6 @@ const getDeliveryDashboard = asyncHandler(async (req, res) => {
         id: order.id,
         customerName: order.customer_name,
         address: order.address,
-        orderValue: toNumber(order.total),
         assignedAt: order.assigned_at,
         deliveredAt: order.delivered_at,
         deliveryDurationMinutes: toNumber(order.delivery_duration_minutes),
@@ -716,13 +755,8 @@ const getDeliveryDashboard = asyncHandler(async (req, res) => {
       }))
     },
     advanced: {
-      earningsSummary: {
-        deliveredOrderValue: rangeSales,
-        commissionRatePercent: normalizedCommissionRate,
-        estimatedEarnings: hasCommissionRate
-          ? Number(((rangeSales * normalizedCommissionRate) / 100).toFixed(2))
-          : null
-      },
+      // Note: earningsSummary is hidden for delivery personnel to protect payment information
+      earningsSummary: null,
       customerRatingsSummary: null,
       distanceCoveredKm: null,
       missedOrReassignedOrders: {

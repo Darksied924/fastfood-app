@@ -83,7 +83,6 @@ function renderAssignedOrders(orders) {
                     <th>Order ID</th>
                     <th>Customer</th>
                     <th>Address</th>
-                    <th>Order Value</th>
                     <th>Assigned Time</th>
                     <th>Status</th>
                     <th>Action</th>
@@ -95,7 +94,6 @@ function renderAssignedOrders(orders) {
                         <td>#${order.id}</td>
                         <td>${order.customerName}</td>
                         <td>${order.address || 'N/A'}</td>
-                        <td>${formatCurrency(order.orderValue)}</td>
                         <td>${formatDateTime(order.assignedAt)}</td>
                         <td><span class="status-badge status-${order.status}">${order.status}</span></td>
                         <td>
@@ -122,7 +120,6 @@ function renderDeliveredOrders(orders) {
                     <th>Order ID</th>
                     <th>Customer</th>
                     <th>Address</th>
-                    <th>Order Value</th>
                     <th>Assigned Time</th>
                     <th>Delivered At</th>
                     <th>Duration</th>
@@ -134,7 +131,6 @@ function renderDeliveredOrders(orders) {
                         <td>#${order.id}</td>
                         <td>${order.customerName}</td>
                         <td>${order.address || 'N/A'}</td>
-                        <td>${formatCurrency(order.orderValue)}</td>
                         <td>${formatDateTime(order.assignedAt)}</td>
                         <td>${formatDateTime(order.deliveredAt)}</td>
                         <td>${formatMinutes(order.deliveryDurationMinutes)}</td>
@@ -213,9 +209,12 @@ function drawChart(canvasId, type, data) {
 }
 
 function renderAdvanced(advanced) {
-    const earningsText = advanced.earningsSummary.estimatedEarnings === null
-        ? `Not configured (set commission rate to estimate). Delivered value: ${formatCurrency(advanced.earningsSummary.deliveredOrderValue)}`
-        : `${formatCurrency(advanced.earningsSummary.estimatedEarnings)} (${advanced.earningsSummary.commissionRatePercent}% of ${formatCurrency(advanced.earningsSummary.deliveredOrderValue)})`;
+    // Handle null earningsSummary for delivery personnel (payment info is protected)
+    const earningsText = advanced.earningsSummary === null
+        ? 'Hidden (payment information protected)'
+        : advanced.earningsSummary.estimatedEarnings === null
+            ? `Not configured (set commission rate to estimate). Delivered value: ${formatCurrency(advanced.earningsSummary.deliveredOrderValue)}`
+            : `${formatCurrency(advanced.earningsSummary.estimatedEarnings)} (${advanced.earningsSummary.commissionRatePercent}% of ${formatCurrency(advanced.earningsSummary.deliveredOrderValue)})`;
 
     document.getElementById('advancedSummary').innerHTML = `
         <p><strong>Earnings Summary:</strong> ${earningsText}</p>
