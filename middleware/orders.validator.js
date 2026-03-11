@@ -28,7 +28,12 @@ const createOrderValidator = [
     .trim()
     .isLength({ max: 500 })
     .withMessage('Delivery address cannot exceed 500 characters'),
-  
+
+  body('replacesOrderId')
+    .optional({ nullable: true })
+    .isInt({ min: 1 })
+    .withMessage('Invalid order reference to replace'),
+
   body('notes')
     .optional({ nullable: true, checkFalsy: true })
     .trim()

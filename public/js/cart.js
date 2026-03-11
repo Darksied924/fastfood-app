@@ -84,6 +84,28 @@ const cart = {
         localStorage.removeItem('cart');
         this.updateCartUI();
         this.emitCartUpdated();
+        sessionStorage.removeItem('replacingOrderId');
+    },
+
+    loadOrderIntoCart(order) {
+        if (!order || !Array.isArray(order.items) || order.items.length === 0) {
+            this.showNotification('Cannot load an empty order for editing.');
+            return false;
+        }
+
+        const orderItems = order.items.map(item => ({
+            id: item.product_id,
+            name: item.product_name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+        }));
+
+        sessionStorage.setItem('replacingOrderId', String(order.id));
+        this.saveCart(orderItems);
+        this.showNotification(`Loaded order #${order.id} for editing. Update the cart and checkout again.`);
+
+        return true;
     },
 
     // Get cart total
@@ -204,6 +226,10 @@ const cart = {
             phone: phone,
             deliveryAddress: deliveryAddress
         };
+        const replacingOrderId = sessionStorage.getItem('replacingOrderId');
+        if (replacingOrderId) {
+            orderData.replacesOrderId = Number(replacingOrderId);
+        }
 
         try {
             const response = await api.createOrder(orderData);
@@ -262,39 +288,150 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const orderId = document.getElementById('orderId').value;
             const phone = document.getElementById('phone').value;
+            const submitBtn = paymentForm.querySelector('button[type="submit"]');
+            const statusDiv = document.getElementById('paymentStatus');
+            
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            
+            if (statusDiv) {
+                statusDiv.style.display = 'block';
+                statusDiv.className = 'payment-status';
+                statusDiv.innerHTML = '<div class="alert alert-info">Initiating M-Pesa payment...</div>';
+            }
             
             try {
                 const response = await api.initiateSTKPush(orderId, phone);
                 
                 if (response.success) {
-                    alert('STK push initiated! In a real app, you would receive a prompt on your phone.\nFor demo, the payment will be simulated.');
+                    // Payment initiated successfully - data is nested in response.data
+                    const checkoutId = response.data.checkoutRequestId;
+                    const isSimulated = response.data.simulated || false;
                     
-                    // Simulate callback after 3 seconds
-                    setTimeout(async () => {
-                        // Simulate successful payment callback
-                        const callbackResponse = await fetch('/api/payments/stk-callback', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                orderId: orderId,
-                                resultCode: 0,
-                                resultDesc: 'Success',
-                                mpesaReceiptNumber: `SIM${Date.now()}`
-                            })
-                        });
+                    statusDiv.innerHTML = '<div class="alert alert-info">' + 
+                        'Please check your phone and enter your M-Pesa PIN to complete the payment.<br>' +
+                        'Checkout ID: ' + checkoutId + 
+                        '</div>';
+                    
+                    submitBtn.textContent = 'Waiting for Payment...';
+                    
+                    // Store checkout request ID for potential query
+                    sessionStorage.setItem('pendingCheckoutId', checkoutId);
+                    sessionStorage.setItem('pendingOrderId', orderId);
+                    
+                    // For demo/simulation purposes, we provide a way to simulate the callback
+                    // In production, you would wait for the actual M-Pesa callback
+                    
+                    if (isSimulated) {
+                        statusDiv.innerHTML += '<div class="alert alert-warning" style="margin-top:10px;">' +
+                            '<strong>Demo Mode:</strong> Since M-Pesa is in sandbox/simulation, ' +
+                            'the payment will be auto-confirmed in a few seconds. ' +
+                            'In production, you would receive an actual M-Pesa prompt on your phone.</div>';
                         
-                        if (callbackResponse.ok) {
-                            alert('Payment successful! Your order is being processed.');
-                            document.getElementById('paymentModal').style.display = 'none';
-                            // Refresh dashboard
-                            if (typeof loadDashboard === 'function') {
-                                loadDashboard();
+                        // Simulate callback after delay (for demo only)
+                        setTimeout(async () => {
+                            try {
+                                const simulateResponse = await fetch('/api/payments/simulate-callback', {
+                                    method: 'POST',
+                                    headers: api.getHeaders(),
+                                    body: JSON.stringify({
+                                        orderId: orderId,
+                                        checkoutRequestId: checkoutId,
+                                        success: true
+                                    })
+                                });
+                                
+                                const simulateResult = await simulateResponse.json();
+                                
+                                if (simulateResult.success) {
+                                    statusDiv.innerHTML = '<div class="alert alert-success">' +
+                                        'Payment successful! Receipt: ' + simulateResult.data.receiptNumber + 
+                                        '</div>';
+                                    
+                                    setTimeout(() => {
+                                        document.getElementById('paymentModal').style.display = 'none';
+                                        cart.clearCart();
+                                        cart.showNotification('Payment successful! Your order is being processed.');
+                                        
+                                        // Refresh dashboard
+                                        if (typeof loadDashboard === 'function') {
+                                            loadDashboard();
+                                        }
+                                        
+                                        // Reset form
+                                        paymentForm.reset();
+                                        submitBtn.disabled = false;
+                                        submitBtn.textContent = 'Pay with M-Pesa';
+                                        statusDiv.style.display = 'none';
+                                    }, 2000);
+                                }
+                            } catch (err) {
+                                console.error('Simulation error:', err);
                             }
-                        }
-                    }, 3000);
+                        }, 5000);
+                    } else {
+                        // Real M-Pesa - start polling for payment status
+                        statusDiv.innerHTML += '<div class="alert alert-info" style="margin-top:10px;">' +
+                            '<strong>Waiting for payment confirmation...</strong><br>' +
+                            'If you completed payment but status doesn\'t update, the callback URL may not be configured correctly.</div>';
+                        
+                        // Poll for payment status every 5 seconds
+                        const maxAttempts = 24; // Poll for up to 2 minutes
+                        let attempts = 0;
+                        
+                        const pollInterval = setInterval(async () => {
+                            attempts++;
+                            try {
+                                const statusResult = await api.queryPaymentStatus(checkoutId);
+                                
+                                if (statusResult.success && statusResult.data.resultCode === 0) {
+                                    clearInterval(pollInterval);
+                                    statusDiv.innerHTML = '<div class="alert alert-success">' +
+                                        'Payment successful! Order has been paid.</div>';
+                                    
+                                    setTimeout(() => {
+                                        document.getElementById('paymentModal').style.display = 'none';
+                                        cart.clearCart();
+                                        cart.showNotification('Payment successful! Your order is being processed.');
+                                        
+                                        // Refresh dashboard
+                                        if (typeof loadDashboard === 'function') {
+                                            loadDashboard();
+                                        }
+                                        
+                                        // Reset form
+                                        paymentForm.reset();
+                                        submitBtn.disabled = false;
+                                        submitBtn.textContent = 'Pay with M-Pesa';
+                                        statusDiv.style.display = 'none';
+                                    }, 2000);
+                                } else if (attempts >= maxAttempts) {
+                                    clearInterval(pollInterval);
+                                    statusDiv.innerHTML += '<div class="alert alert-warning" style="margin-top:10px;">' +
+                                        'Still waiting for payment confirmation. Please check your phone and try again.</div>';
+                                    submitBtn.disabled = false;
+                                    submitBtn.textContent = 'Pay with M-Pesa';
+                                }
+                            } catch (err) {
+                                console.error('Status poll error:', err);
+                            }
+                        }, 15000);
+                    }
+                } else {
+                    // Payment initiation failed
+                    statusDiv.innerHTML = '<div class="alert alert-danger">' +
+                        'Payment failed: ' + (response.message || response.responseDescription || 'Unknown error') + 
+                        '</div>';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Pay with M-Pesa';
                 }
             } catch (error) {
-                alert('Payment failed: ' + error.message);
+                statusDiv.innerHTML = '<div class="alert alert-danger">' +
+                    'Error: ' + error.message + 
+                    '</div>';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Pay with M-Pesa';
             }
         });
     }

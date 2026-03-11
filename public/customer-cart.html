@@ -87,7 +87,7 @@
     <div id="paymentModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('paymentModal')" data-tooltip="Close this dialog">&times;</span>
-            <h3>💳 Simulate M-Pesa Payment</h3>
+            <h3>💳 M-Pesa Payment</h3>
             <p>Order Total: <span id="paymentAmount">KSh 0</span></p>
             <form id="paymentForm">
                 <input type="hidden" id="orderId" name="orderId">
@@ -96,8 +96,9 @@
                     <input type="tel" id="phone" name="phone" placeholder="254712345678" required aria-describedby="phone-hint">
                     <span id="phone-hint" class="field-hint">Enter the phone number registered with M-Pesa</span>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Simulate STK Push</button>
+                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Pay with M-Pesa</button>
             </form>
+            <div id="paymentStatus" class="payment-status" style="display: none;"></div>
         </div>
     </div>
 

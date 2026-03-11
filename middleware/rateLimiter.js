@@ -31,7 +31,7 @@ const createRateLimiter = ({ windowMs, maxRequests, keyGenerator, message }) => 
     }
 
     if (entry.count >= max) {
-      const retryAfterSeconds = Math.ceil((entry.resetAt - now) / 1000);
+      const retryAfterSeconds = Math.ceil((entry.resetAt - now) / 1000) + 2;
       res.set('Retry-After', String(Math.max(retryAfterSeconds, 1)));
       return errorResponse(res, errorMessage, 429);
     }

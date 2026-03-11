@@ -287,5 +287,12 @@ const api = {
             body: JSON.stringify({ orderId, phone })
         });
         return this.handleResponse(response);
+    },
+
+    async queryPaymentStatus(checkoutRequestId) {
+        const response = await fetch(`${API_BASE}/payments/status/${checkoutRequestId}`, {
+            headers: this.getHeaders()
+        });
+        return this.handleResponse(response);
     }
 };

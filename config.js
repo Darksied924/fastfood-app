@@ -53,5 +53,13 @@ module.exports = {
     userPaymentInitMaxRequests: parseInt(process.env.USER_PAYMENT_INIT_RATE_LIMIT_MAX_REQUESTS, 10) || 8,
     paymentCallbackWindowMs: parseInt(process.env.PAYMENT_CALLBACK_RATE_LIMIT_WINDOW_MS, 10) || 5 * 60 * 1000,
     paymentCallbackMaxRequests: parseInt(process.env.PAYMENT_CALLBACK_RATE_LIMIT_MAX_REQUESTS, 10) || 30
+  },
+  mpesa: {
+    consumerKey: process.env.MPESA_CONSUMER_KEY || '',
+    consumerSecret: process.env.MPESA_CONSUMER_SECRET || '',
+    businessShortCode: process.env.MPESA_BUSINESS_SHORT_CODE || '',
+    passkey: process.env.MPESA_PASSKEY || '',
+    callbackUrl: process.env.MPESA_CALLBACK_URL || '',
+    environment: process.env.MPESA_ENVIRONMENT || 'sandbox'
   }
 };

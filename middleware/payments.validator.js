@@ -17,26 +17,30 @@ const stkPushValidator = [
 ];
 
 /**
- * Validation rules for STK callback
+ * Validation rules for STK callback (Daraja payload)
  */
 const stkCallbackValidator = [
-  body('orderId')
-    .isInt({ min: 1 })
-    .withMessage('Invalid order ID'),
-  
-  body('resultCode')
+  body('Body.stkCallback')
+    .exists()
+    .withMessage('STK callback payload is missing')
+    .bail(),
+
+  body('Body.stkCallback.CheckoutRequestID')
+    .notEmpty()
+    .withMessage('CheckoutRequestID is required'),
+
+  body('Body.stkCallback.ResultCode')
     .isInt()
-    .withMessage('Result code is required'),
-  
-  body('resultDesc')
+    .withMessage('ResultCode is required'),
+
+  body('Body.stkCallback.ResultDesc')
     .optional({ nullable: true })
     .trim()
     .isLength({ max: 500 })
-    .withMessage('Result description is too long')
+    .withMessage('ResultDesc is too long')
 ];
 
 module.exports = {
   stkPushValidator,
   stkCallbackValidator
 };
-

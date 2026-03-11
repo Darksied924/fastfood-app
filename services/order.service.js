@@ -23,16 +23,17 @@ class OrderService {
      * @param {string} deliveryAddress - Delivery address
      * @returns {Promise<Object>} Created order
      */
-    async createOrder(userId, items, total, phone, deliveryAddress) {
+    async createOrder(userId, items, total, phone, deliveryAddress, options = {}) {
         const connection = await db.getConnection();
+        const { replacesOrderId } = options;
         
         try {
             await db.beginTransaction(connection);
 
             // Create order
             const [orderResult] = await connection.execute(
-                'INSERT INTO orders (user_id, total, phone, delivery_address, status) VALUES (?, ?, ?, ?, ?)',
-                [userId, total, phone, deliveryAddress, 'pending']
+                'INSERT INTO orders (user_id, replaces_order_id, total, phone, delivery_address, status) VALUES (?, ?, ?, ?, ?, ?)',
+                [userId, replacesOrderId || null, total, phone, deliveryAddress, 'pending']
             );
 
             const orderId = orderResult.insertId;
@@ -56,6 +57,17 @@ class OrderService {
                     'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
                     [orderId, item.id, item.quantity, currentPrice]
                 );
+            }
+
+            if (replacesOrderId) {
+                const [result] = await connection.execute(
+                    'UPDATE orders SET status = ? WHERE id = ? AND status = ?',
+                    ['replaced', replacesOrderId, 'pending']
+                );
+
+                if (result.affectedRows === 0) {
+                    throw new Error('Unable to mark the original order as replaced');
+                }
             }
 
             await db.commit(connection);

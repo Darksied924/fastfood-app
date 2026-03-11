@@ -51,6 +51,109 @@ const ensureUsersSchema = async (connection) => {
   );
 };
 
+// Helper function to ensure foreign key constraint exists
+const ensureForeignKey = async (connection, constraintName, tableName, checkSql) => {
+  const [constraints] = await connection.execute(
+    `SELECT CONSTRAINT_NAME
+     FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND CONSTRAINT_NAME = ?
+     LIMIT 1`,
+    [tableName, constraintName]
+  );
+
+  if (constraints.length > 0) {
+    return;
+  }
+
+  logger.warn(`Missing ${constraintName} constraint on ${tableName}. Adding foreign key.`);
+  await connection.execute(checkSql);
+  logger.info(`Foreign key created: ${constraintName} on ${tableName}.`);
+};
+
+const ensureTableEngineInnoDB = async (connection, tableName) => {
+  const [tables] = await connection.execute(
+    `SELECT ENGINE
+     FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+     LIMIT 1`,
+    [tableName]
+  );
+
+  if (tables.length === 0) {
+    return;
+  }
+
+  const currentEngine = tables[0].ENGINE;
+  if (currentEngine !== 'InnoDB') {
+    logger.warn(`${tableName} is not using InnoDB (${currentEngine}). Converting before applying foreign keys.`);
+    await connection.execute(`ALTER TABLE ${tableName} ENGINE=InnoDB`);
+    logger.info(`${tableName} now uses InnoDB engine (required for foreign keys).`);
+  }
+};
+
+const ensureReplacesColumnDefinition = async (connection, columnType) => {
+  const [columns] = await connection.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'orders'
+       AND COLUMN_NAME = 'replaces_order_id'
+     LIMIT 1`
+  );
+
+  if (columns.length === 0) {
+    return;
+  }
+
+  await connection.execute(
+    `ALTER TABLE orders MODIFY COLUMN replaces_order_id ${columnType} NULL AFTER delivery_id`
+  );
+};
+
+const ensureStatusEnumIncludesReplaced = async (connection) => {
+  const [columns] = await connection.execute(
+    `SELECT COLUMN_TYPE
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'orders'
+       AND COLUMN_NAME = 'status'
+     LIMIT 1`
+  );
+
+  if (columns.length === 0) {
+    return;
+  }
+
+  const columnType = columns[0].COLUMN_TYPE || '';
+  if (!columnType.includes("'replaced'")) {
+    logger.warn('orders.status enum is missing the replaced value; updating.');
+    await connection.execute(
+      "ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','preparing','out_for_delivery','delivered','replaced') NOT NULL DEFAULT 'pending'"
+    );
+    logger.info('Added replaced state to orders.status enum.');
+  }
+};
+
+const getOrdersIdColumnType = async (connection) => {
+  const [columns] = await connection.execute(
+    `SELECT COLUMN_TYPE
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'orders'
+       AND COLUMN_NAME = 'id'
+     LIMIT 1`
+  );
+
+  if (columns.length === 0) {
+    return 'INT';
+  }
+
+  return columns[0].COLUMN_TYPE;
+};
+
 const ensureOrdersSchema = async (connection) => {
   await ensureTableColumn(
     connection,
@@ -79,6 +182,57 @@ const ensureOrdersSchema = async (connection) => {
     'delivery_address',
     'ALTER TABLE orders ADD COLUMN delivery_address VARCHAR(500) NULL AFTER phone'
   );
+
+  await ensureTableColumn(
+    connection,
+    'orders',
+    'checkout_request_id',
+    'ALTER TABLE orders ADD COLUMN checkout_request_id VARCHAR(100) NULL AFTER mpesa_receipt'
+  );
+
+
+  const replacesColumnType = await getOrdersIdColumnType(connection);
+
+  await ensureTableColumn(
+    connection,
+    'orders',
+    'replaces_order_id',
+    `ALTER TABLE orders ADD COLUMN replaces_order_id ${replacesColumnType} NULL AFTER delivery_id`
+  );
+
+  await ensureReplacesColumnDefinition(connection, replacesColumnType);
+  await ensureTableEngineInnoDB(connection, 'orders');
+  await ensureIndex(
+    connection,
+    'orders',
+    'idx_orders_replacement',
+    'CREATE INDEX idx_orders_replacement ON orders (replaces_order_id)'
+  );
+
+  // Add foreign key constraint for replaces_order_id separately
+  await ensureForeignKey(
+    connection,
+    'fk_orders_replacement',
+    'orders',
+    'ALTER TABLE orders ADD CONSTRAINT fk_orders_replacement FOREIGN KEY (replaces_order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE SET NULL'
+  );
+
+  // Add 'replaced' status enum value
+  await ensureTableColumn(
+    connection,
+    'orders',
+    'status',
+    "ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','preparing','out_for_delivery','delivered','replaced') NOT NULL DEFAULT 'pending'"
+  );
+
+  await ensureTableColumn(
+    connection,
+    'orders',
+    'paid_at',
+    'ALTER TABLE orders ADD COLUMN paid_at DATETIME NULL AFTER notes'
+  );
+
+  await ensureStatusEnumIncludesReplaced(connection);
 };
 
 const ensureProductsSchema = async (connection) => {
@@ -139,6 +293,13 @@ const ensureAnalyticsIndexes = async (connection) => {
     'orders',
     'idx_orders_delivery_status_created_at',
     'CREATE INDEX idx_orders_delivery_status_created_at ON orders (delivery_id, status, created_at)'
+  );
+
+  await ensureIndex(
+    connection,
+    'orders',
+    'idx_orders_checkout_request',
+    'CREATE INDEX idx_orders_checkout_request ON orders (checkout_request_id)'
   );
 
   await ensureIndex(

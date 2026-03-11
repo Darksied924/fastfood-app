@@ -1,14 +1,15 @@
 const db = require('../db');
 const logger = require('../logger');
 const orderService = require('./order.service');
+const mpesaService = require('./mpesa.service');
 
 /**
  * Payment Service
- * Handles payment processing logic
+ * Handles payment processing logic with M-Pesa integration
  */
 class PaymentService {
     /**
-     * Process payment (simulated)
+     * Process payment
      * @param {number} orderId - Order ID
      * @param {number} amount - Payment amount
      * @param {string} phone - Customer phone
@@ -27,32 +28,19 @@ class PaymentService {
                 throw new Error('Payment amount does not match order total');
             }
 
-            // Simulate payment processing
             logger.info(`Processing payment for order ${orderId}: KSh ${amount}`);
 
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Check if M-Pesa is configured for real payments
+            if (!mpesaService.isConfigured()) {
+                // Fall back to simulated payment
+                return this.processSimulatedPayment(orderId, amount, phone);
+            }
 
-            // Generate fake receipt number
-            const receiptNumber = `MP${Date.now()}${Math.floor(Math.random() * 1000)}`;
+            // For M-Pesa, we don't process directly here
+            // The actual payment happens via STK Push
+            // This method is kept for backward compatibility
+            throw new Error('Please use STK Push to complete payment');
 
-            // Update order status
-            await db.query(
-                'UPDATE orders SET status = ?, mpesa_receipt = ? WHERE id = ?',
-                ['paid', receiptNumber, orderId]
-            );
-
-            logger.info(`Payment successful for order ${orderId}. Receipt: ${receiptNumber}`);
-
-            return {
-                success: true,
-                receiptNumber,
-                transactionId: `TXN${Date.now()}`,
-                amount,
-                phone,
-                timestamp: new Date().toISOString(),
-                message: 'Payment completed successfully'
-            };
         } catch (error) {
             logger.error(`Payment failed for order ${orderId}:`, error);
             throw error;
@@ -60,7 +48,40 @@ class PaymentService {
     }
 
     /**
-     * Simulate STK Push initiation
+     * Process simulated payment (fallback)
+     * @param {number} orderId - Order ID
+     * @param {number} amount - Payment amount
+     * @param {string} phone - Customer phone
+     * @returns {Promise<Object>} Payment result
+     */
+    async processSimulatedPayment(orderId, amount, phone) {
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Generate fake receipt number
+        const receiptNumber = `SIM${Date.now()}${Math.floor(Math.random() * 1000)}`;
+
+        // Update order status
+        await db.query(
+            'UPDATE orders SET status = ?, mpesa_receipt = ? WHERE id = ?',
+            ['paid', receiptNumber, orderId]
+        );
+
+        logger.info(`Simulated payment successful for order ${orderId}. Receipt: ${receiptNumber}`);
+
+        return {
+            success: true,
+            receiptNumber,
+            transactionId: `TXN${Date.now()}`,
+            amount,
+            phone,
+            timestamp: new Date().toISOString(),
+            message: 'Payment completed successfully (Simulated)'
+        };
+    }
+
+    /**
+     * Initiate STK Push for payment
      * @param {number} orderId - Order ID
      * @param {string} phone - Customer phone
      * @returns {Promise<Object>} STK push response
@@ -74,97 +95,197 @@ class PaymentService {
                 throw new Error('Order is not in pending state');
             }
 
-            // Validate phone number format (simple validation)
-            if (!phone || phone.length < 10) {
-                throw new Error('Invalid phone number');
+            // Validate phone number
+            const formattedPhone = mpesaService.formatPhoneNumber(phone);
+            
+            if (!formattedPhone) {
+                throw new Error('Invalid phone number format');
             }
 
-            logger.info(`STK push initiated for order ${orderId} to phone ${phone}`);
+            // Get order amount
+            const amount = order.total;
 
-            // Simulate API call to M-Pesa
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            logger.info(`PaymentService requesting STK push for order ${orderId}`, {
+                amount,
+                phone: formattedPhone
+            });
 
-            // Generate fake checkout request ID
-            const checkoutRequestId = `ws_CO_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-            const merchantRequestId = `MR-${Date.now()}`;
+            // Import stkService here to avoid circular dependency
+            const stkService = require('./stk.service');
+            
+            // Initiate STK push
+            const result = await stkService.initiateSTKPush(orderId, formattedPhone, amount);
 
-            return {
-                success: true,
-                checkoutRequestId,
-                merchantRequestId,
-                responseCode: '0',
-                responseDescription: 'Success. Request accepted for processing',
-                customerMessage: 'Please enter your M-Pesa PIN to complete the transaction',
-                orderId,
-                amount: order.total,
-                phone
-            };
+            let checkoutRequestId = result.checkoutRequestId ?? result.CheckoutRequestID ?? null;
+            await db.query(
+                'UPDATE orders SET checkout_request_id = ? WHERE id = ?',
+                [checkoutRequestId, orderId]
+            );
+
+            logger.info('Saved checkout_request_id for order', { orderId, checkoutRequestId });
+
+            return result;
+
         } catch (error) {
-            logger.error('STK push failed:', error);
+            logger.error('STK push initiation failed:', error);
             throw error;
         }
     }
 
     /**
-     * Handle STK callback (simulated)
-     * @param {Object} callbackData - Callback data
+     * Handle STK callback from M-Pesa
+     * @param {Object} callbackData - Callback data from M-Pesa
      * @returns {Promise<Object>} Callback response
      */
     async handleSTKCallback(callbackData) {
-        const { orderId, resultCode, resultDesc, mpesaReceiptNumber } = callbackData;
+        try {
+            const stkService = require('./stk.service');
 
-        logger.info(`STK callback received for order ${orderId}: Code ${resultCode}`);
+            const result = await stkService.handleCallback(callbackData);
 
-        if (resultCode !== 0) {
-            // Payment failed
-            logger.info(`Payment failed for order ${orderId}: ${resultDesc}`);
-            
-            // Update order with failure reason if needed
-            await db.query(
-                'UPDATE orders SET notes = ? WHERE id = ?',
-                [`Payment failed: ${resultDesc}`, orderId]
-            );
+            const callbackPayload = callbackData.Body?.stkCallback ?? {};
+            const checkoutRequestIdFromCallback = callbackPayload.CheckoutRequestID ?? null;
+            const resultCodeFromCallback = callbackPayload.ResultCode ?? result.resultCode ?? result.ResultCode ?? 0;
+            const resultDesc = callbackPayload.ResultDesc ?? result.resultDesc ?? result.ResultDesc ?? (resultCodeFromCallback === 0 ? 'Success' : 'Payment failed');
+            const checkoutRequestId = checkoutRequestIdFromCallback ?? result.checkoutRequestId ?? result.CheckoutRequestID ?? null;
+            const parsedResultCode = Number(resultCodeFromCallback);
+            const resultCode = Number.isNaN(parsedResultCode) ? 1 : parsedResultCode;
 
-            return {
-                ResultCode: resultCode,
-                ResultDesc: resultDesc,
-                success: false
-            };
-        }
+            logger.info('Parsed STK callback payload', {
+                checkoutRequestId,
+                resultCode,
+                resultDesc,
+                orderId: result.orderId,
+                amount: result.amount,
+                mpesaReceiptNumber: result.mpesaReceiptNumber
+            });
 
-        // Check if receipt already used (prevent duplicates)
-        if (mpesaReceiptNumber) {
-            const existingOrder = await db.query(
-                'SELECT id FROM orders WHERE mpesa_receipt = ?',
-                [mpesaReceiptNumber]
-            );
+            let orderRows = [];
 
-            if (existingOrder.length > 0) {
-                logger.warn(`Duplicate receipt number: ${mpesaReceiptNumber}`);
+            if (checkoutRequestId) {
+                orderRows = await db.query(
+                    'SELECT * FROM orders WHERE checkout_request_id = ? LIMIT 1',
+                    [checkoutRequestId]
+                );
+            }
+
+            if (orderRows.length === 0 && result.orderId) {
+                orderRows = await db.query(
+                    'SELECT * FROM orders WHERE id = ? LIMIT 1',
+                    [result.orderId]
+                );
+            }
+
+            if (orderRows.length === 0) {
+                logger.error('STK callback could not find matching order', {
+                    checkoutRequestId,
+                    callbackData
+                });
+
                 return {
-                    ResultCode: '1',
-                    ResultDesc: 'Duplicate transaction',
+                    ResultCode: 1,
+                    ResultDesc: 'Order not found for payment',
                     success: false
                 };
             }
+
+            const order = orderRows[0];
+            const resolvedCheckoutId = checkoutRequestId ?? order.checkout_request_id;
+            const updateTargetColumn = resolvedCheckoutId ? 'checkout_request_id' : 'id';
+            const updateTargetValue = resolvedCheckoutId ?? order.id;
+            const newStatus = resultCode === 0 ? 'paid' : 'failed';
+
+            if (order.status === 'paid' && resultCode === 0) {
+                logger.warn('Duplicate callback ignored for already paid order', {
+                    orderId: order.id,
+                    checkoutRequestId: resolvedCheckoutId || null
+                });
+
+                return {
+                    ResultCode: 0,
+                    ResultDesc: 'Order already marked as paid',
+                    success: true
+                };
+            }
+
+            if (order.status === 'paid' && resultCode !== 0) {
+                logger.warn('Callback indicates failure but order already marked as paid; ignoring status change', {
+                    orderId: order.id,
+                    checkoutRequestId: resolvedCheckoutId || null
+                });
+
+                return {
+                    ResultCode: 0,
+                    ResultDesc: 'Order already marked as paid',
+                    success: true
+                };
+            }
+
+            let receipt = null;
+            if (resultCode === 0) {
+                receipt = result.mpesaReceiptNumber || `MP${Date.now()}`;
+
+                const duplicateReceipt = await db.query(
+                    'SELECT id FROM orders WHERE mpesa_receipt = ? AND id != ? LIMIT 1',
+                    [receipt, order.id]
+                );
+
+                if (duplicateReceipt.length > 0) {
+                    logger.warn(`Duplicate receipt number: ${receipt}`);
+                    return {
+                        ResultCode: 1,
+                        ResultDesc: 'Duplicate transaction',
+                        success: false
+                    };
+                }
+            }
+
+            const updateQuery = resultCode === 0
+                ? `UPDATE orders SET status = ?, mpesa_receipt = ?, paid_at = NOW() WHERE ${updateTargetColumn} = ?`
+                : `UPDATE orders SET status = ?, mpesa_receipt = NULL, paid_at = NULL WHERE ${updateTargetColumn} = ?`;
+
+            const updateParams = resultCode === 0
+                ? [newStatus, receipt, updateTargetValue]
+                : [newStatus, updateTargetValue];
+
+            const updateResult = await db.query(updateQuery, updateParams);
+
+            if (!updateResult || updateResult.affectedRows === 0) {
+                logger.warn('STK callback updated no rows', {
+                    orderId: order.id,
+                    checkoutRequestId: resolvedCheckoutId,
+                    status: newStatus,
+                    updateResult
+                });
+            } else {
+                logger.info('STK callback updated order status', {
+                    orderId: order.id,
+                    checkoutRequestId: resolvedCheckoutId,
+                    status: newStatus,
+                    receipt
+                });
+            }
+
+            return {
+                ResultCode: resultCode === 0 ? 0 : resultCode || 1,
+                ResultDesc: resultDesc,
+                MpesaReceiptNumber: receipt,
+                success: resultCode === 0
+            };
+        } catch (error) {
+            logger.error('STK callback handling failed:', error);
+            logger.error('Original callback payload:', callbackData);
+            throw error;
         }
+    }
 
-        // Update order status to paid and add receipt
-        const receipt = mpesaReceiptNumber || `SIM${Date.now()}`;
-        
-        await db.query(
-            'UPDATE orders SET status = ?, mpesa_receipt = ? WHERE id = ?',
-            ['paid', receipt, orderId]
-        );
-
-        logger.info(`Payment confirmed for order ${orderId}. Receipt: ${receipt}`);
-
-        return {
-            ResultCode: 0,
-            ResultDesc: 'Success',
-            MpesaReceiptNumber: receipt,
-            success: true
-        };
+    /**
+     * Handle manual callback simulation (for testing/demo)
+     * @param {Object} callbackData - Simulated callback data
+     * @returns {Promise<Object>} Callback response
+     */
+    async handleSimulatedCallback(callbackData) {
+        return this.handleSTKCallback(callbackData);
     }
 
     /**
@@ -214,6 +335,14 @@ class PaymentService {
         `);
 
         return stats[0];
+    }
+
+    /**
+     * Check if M-Pesa is configured
+     * @returns {boolean}
+     */
+    isMpesaConfigured() {
+        return mpesaService.isConfigured();
     }
 }
 

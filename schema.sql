@@ -40,11 +40,14 @@ CREATE TABLE IF NOT EXISTS orders (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL,
   delivery_id INT UNSIGNED NULL,
+  replaces_order_id INT UNSIGNED NULL,
   total DECIMAL(10, 2) NOT NULL,
   phone VARCHAR(20) NULL,
   delivery_address VARCHAR(500) NULL,
-  status ENUM('pending', 'paid', 'preparing', 'out_for_delivery', 'delivered') NOT NULL DEFAULT 'pending',
+  status ENUM('pending', 'paid', 'preparing', 'out_for_delivery', 'delivered', 'replaced') NOT NULL DEFAULT 'pending',
+  paid_at DATETIME NULL,
   mpesa_receipt VARCHAR(100) NULL UNIQUE,
+  checkout_request_id VARCHAR(100) NULL,
   notes TEXT NULL,
   manager_read_at DATETIME NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -57,9 +60,15 @@ CREATE TABLE IF NOT EXISTS orders (
     FOREIGN KEY (delivery_id) REFERENCES users(id)
     ON UPDATE CASCADE
     ON DELETE SET NULL,
+  CONSTRAINT fk_orders_replacement
+    FOREIGN KEY (replaces_order_id) REFERENCES orders(id)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL,
   INDEX idx_orders_user_id (user_id),
   INDEX idx_orders_delivery_id (delivery_id),
+  INDEX idx_orders_replacement (replaces_order_id),
   INDEX idx_orders_status (status),
+  INDEX idx_orders_checkout_request (checkout_request_id),
   INDEX idx_orders_created_at (created_at),
   INDEX idx_orders_status_created_at (status, created_at),
   INDEX idx_orders_delivery_status_created_at (delivery_id, status, created_at)

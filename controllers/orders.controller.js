@@ -7,15 +7,33 @@ const orderService = require('../services/order.service');
 // @desc    Create new order
 // @route   POST /api/orders
 const createOrder = asyncHandler(async (req, res) => {
-  const { items, total, phone, deliveryAddress } = req.body;
+  const { items, total, phone, deliveryAddress, replacesOrderId } = req.body;
   const userId = req.user.id;
+  const replacementOrderId = replacesOrderId ? Number(replacesOrderId) : null;
 
   if (!items || items.length === 0) {
     return errorResponse(res, 'Order must contain items', 400);
   }
 
+  if (replacementOrderId) {
+    const existingOrder = await db.query(
+      'SELECT id, status FROM orders WHERE id = ? AND user_id = ?',
+      [replacementOrderId, userId]
+    );
+
+    if (existingOrder.length === 0) {
+      return errorResponse(res, 'Order to edit was not found', 404);
+    }
+
+    if (existingOrder[0].status !== 'pending') {
+      return errorResponse(res, 'Only pending orders can be edited', 400);
+    }
+  }
+
   // Create order with transaction
-  const order = await orderService.createOrder(userId, items, total, phone, deliveryAddress);
+  const order = await orderService.createOrder(userId, items, total, phone, deliveryAddress, {
+    replacesOrderId: replacementOrderId
+  });
 
   logger.info(`Order created: ${order.id} by user: ${userId}`);
 
@@ -77,6 +95,7 @@ const getMyOrders = asyncHandler(async (req, res) => {
      FROM orders o
      LEFT JOIN users d ON o.delivery_id = d.id
      WHERE o.user_id = ?
+       AND o.status <> 'replaced'
      ORDER BY o.created_at DESC`,
     [userId]
   );
@@ -126,6 +145,10 @@ const getOrder = asyncHandler(async (req, res) => {
   }
 
   const order = orders[0];
+
+  if (order.status === 'replaced' && userRole === 'customer') {
+    return errorResponse(res, 'Order not found', 404);
+  }
 
   // Check authorization (customers can only view their own orders)
   if (userRole === 'customer' && order.user_id !== userId) {

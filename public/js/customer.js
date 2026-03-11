@@ -1,4 +1,5 @@
 let currentCustomer = null;
+let customerOrdersCache = {};
 const formatKsh = (amount) => `KSh ${Number(amount || 0).toLocaleString('en-KE', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
@@ -129,6 +130,10 @@ async function loadCustomerOrders() {
     try {
         const response = await api.getMyOrders();
         const orders = response.data;
+        customerOrdersCache = orders.reduce((acc, order) => {
+            acc[order.id] = order;
+            return acc;
+        }, {});
         const container = document.getElementById('customer-orders');
 
         if (orders.length === 0) {
@@ -155,17 +160,39 @@ async function loadCustomerOrders() {
                         </div>
                     `).join('')}
                 </div>
-                ${order.status === 'pending' ? `
-                    <button class="btn btn-primary" onclick="showPaymentModal(${order.id}, ${order.total})">
-                        Pay Now
-                    </button>
-                ` : ''}
+                <div class="order-actions">
+                    ${order.status === 'pending' ? `
+                        <button class="btn btn-primary" onclick="showPaymentModal(${order.id}, ${order.total})">
+                            Pay Now
+                        </button>
+                        <button class="btn btn-secondary" onclick="startOrderEdit(${order.id})">
+                            Edit Order
+                        </button>
+                    ` : ''}
+                </div>
             </div>
         `).join('');
     } catch (error) {
         console.error('Failed to load orders:', error);
     }
 }
+
+function startOrderEdit(orderId) {
+    const order = customerOrdersCache[orderId];
+    if (!order) {
+        cart.showNotification('Unable to load this order for editing.');
+        return;
+    }
+
+    const loaded = cart.loadOrderIntoCart(order);
+    if (!loaded) {
+        return;
+    }
+
+    window.location.href = '/customer/cart';
+}
+
+window.startOrderEdit = startOrderEdit;
 
 function showPaymentModal(orderId, amount) {
     const modal = document.getElementById('paymentModal');

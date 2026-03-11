@@ -1,17 +1,22 @@
-# TODO: Role-Based Visibility for Order Information
+# TODO - Database Schema Migration for Order Replacements
 
-## Backend Changes (controllers/orders.controller.js)
-- [x] 1. Update getAllOrders - Already returns all details for admin/manager
-- [x] 2. Update getOrder - Add role-based filtering (remove total/prices for delivery)
-- [x] 3. Update getAssignedOrders - Remove total for delivery role
-- [x] 4. Update getDeliveryDashboard - Remove orderValue for delivery role
+## Task
+Update the database schema to support order replacements feature:
+- Add `replaces_order_id` column to orders table
+- Add 'replaced' status enum value
 
-## Frontend Changes
-- [x] 5. Update delivery-dashboard.js - Remove order value columns
+## Steps Completed:
+- [x] Read and analyze schema.sql to understand the target schema
+- [x] Read order.service.js to understand the code requirements
+- [x] Read db.js to understand the existing migration system
 
-## Testing
-- [x] 6. Verify API returns all fields for admin
-- [x] 7. Verify API returns all fields for manager
-- [x] 8. Verify API does NOT return order value for delivery
-- [x] 9. Verify frontend doesn't display order value for delivery
+## Steps Remaining:
+- [ ] Update db.js to add migration for replaces_order_id column
+- [ ] Update db.js to add migration for 'replaced' status enum
+- [ ] Test the migration by running the application
+
+## Implementation Details:
+The fix involves adding two migrations in db.js:
+1. Add `replaces_order_id` column (INT UNSIGNED NULL) with FK constraint
+2. Modify status ENUM to include 'replaced' value
 

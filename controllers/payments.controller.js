@@ -2,9 +2,10 @@ const db = require('../db');
 const logger = require('../logger');
 const asyncHandler = require('../utils/asyncHandler');
 const { successResponse, errorResponse } = require('../utils/response.util');
-const stkService = require('../services/stk.service');
+const paymentService = require('../services/payment.service');
+const mpesaService = require('../services/mpesa.service');
 
-// @desc    Initiate STK Push simulation
+// @desc    Initiate STK Push
 // @route   POST /api/payments/stk-push
 const initiateSTKPush = asyncHandler(async (req, res) => {
   const { orderId, phone } = req.body;
@@ -23,73 +24,151 @@ const initiateSTKPush = asyncHandler(async (req, res) => {
     return errorResponse(res, 'Order not found or cannot be paid', 404);
   }
 
-  // Simulate STK push
-  const stkResult = await stkService.initiateSTKPush(orderId, phone, orders[0].total);
+  // Initiate STK push
+  const stkResult = await paymentService.initiateSTKPush(orderId, phone);
 
-  logger.info(`STK push initiated for order ${orderId}`);
+  logger.info(`STK push initiated for order ${orderId}:`, stkResult);
 
-  successResponse(res, stkResult, 'STK push initiated. Please check your phone for the payment prompt.');
+  if (stkResult.success) {
+    successResponse(res, stkResult, stkResult.customerMessage || 'STK push initiated. Please check your phone for the payment prompt.');
+  } else {
+    errorResponse(res, stkResult.responseDescription || 'Failed to initiate payment', 400);
+  }
 });
 
-// @desc    STK Callback simulation
+// @desc    Handle M-Pesa STK Callback
 // @route   POST /api/payments/stk-callback
 const stkCallback = asyncHandler(async (req, res) => {
-  const { orderId, resultCode, resultDesc, mpesaReceiptNumber } = req.body;
+  console.log("CALLBACK RECEIVED");
+  console.log(JSON.stringify(req.body, null, 2));
 
-  // Log the callback
-  logger.info(`STK callback received for order ${orderId}: Code ${resultCode}`);
+  const callbackData = req.body;
 
-  if (resultCode !== 0) {
-    // Payment failed
-    logger.info(`Payment failed for order ${orderId}: ${resultDesc}`);
-    return successResponse(res, { 
-      ResultCode: resultCode, 
-      ResultDesc: resultDesc 
+  logger.info('MPESA CALLBACK BODY:', JSON.stringify(callbackData));
+  logger.info('FULL CALLBACK PAYLOAD:', JSON.stringify(callbackData));
+
+  // Log the callback with detailed info
+  logger.info('STK callback raw data:', JSON.stringify(callbackData));
+  
+  // Debug: Log the body structure to help troubleshoot
+  logger.info('STK callback Body:', JSON.stringify(callbackData.Body));
+  logger.info('STK callback stkCallback:', JSON.stringify(callbackData.Body?.stkCallback));
+
+  try {
+    // Handle the callback
+    const result = await paymentService.handleSTKCallback(callbackData);
+    
+    // Log the result for debugging
+    logger.info('STK callback result:', JSON.stringify(result));
+
+    // Always return 200 to M-Pesa to acknowledge receipt
+    res.status(200).json({
+      ResultCode: result.ResultCode,
+      ResultDesc: result.ResultDesc
+    });
+  } catch (error) {
+    // Log the error for debugging
+    logger.error('STK callback processing error:', error.message);
+    logger.error('STK callback error stack:', error.stack);
+    
+    // Still return 200 to M-Pesa to prevent retries
+    res.status(200).json({
+      ResultCode: 1,
+      ResultDesc: 'Callback received but processing failed'
     });
   }
+});
 
-  // Check if receipt already used
-  if (mpesaReceiptNumber) {
-    const existingOrder = await db.query(
-      'SELECT id FROM orders WHERE mpesa_receipt = ?',
-      [mpesaReceiptNumber]
-    );
+// @desc    Simulate STK callback (for testing in sandbox)
+// @route   POST /api/payments/simulate-callback
+const simulateCallback = asyncHandler(async (req, res) => {
+  const { orderId, success, checkoutRequestId } = req.body;
 
-    if (existingOrder.length > 0) {
-      logger.warn(`Duplicate receipt number: ${mpesaReceiptNumber}`);
-      return errorResponse(res, 'Duplicate transaction', 400);
-    }
+  if (!orderId || !checkoutRequestId) {
+    return errorResponse(res, 'Order ID and checkout request ID are required', 400);
   }
 
-  // Get order details
-  const orders = await db.query(
-    'SELECT * FROM orders WHERE id = ?',
-    [orderId]
-  );
+  // Create simulated callback data
+  const stkService = require('../services/stk.service');
+  const callbackResult = await stkService.simulateCallback(checkoutRequestId, success !== false);
 
-  if (orders.length === 0) {
-    logger.error(`Order ${orderId} not found in callback`);
-    return errorResponse(res, 'Order not found', 404);
+  if (callbackResult.success) {
+    // Process the callback
+    await paymentService.handleSTKCallback(callbackResult.callbackData);
+    
+    successResponse(res, {
+      success: true,
+      orderId: callbackResult.orderId,
+      receiptNumber: callbackResult.receiptNumber,
+      amount: callbackResult.amount
+    }, 'Payment simulation successful. Order has been updated to paid.');
+  } else {
+    successResponse(res, {
+      success: false,
+      orderId: callbackResult.orderId,
+      resultCode: callbackResult.resultCode,
+      resultDesc: callbackResult.resultDesc
+    }, 'Payment cancelled by user');
+  }
+});
+
+// @desc    Query payment status
+// @route   GET /api/payments/status/:checkoutRequestId
+const queryPaymentStatus = asyncHandler(async (req, res) => {
+  const { checkoutRequestId } = req.params;
+
+  if (!checkoutRequestId) {
+    return errorResponse(res, 'Checkout request ID is required', 400);
   }
 
-  const order = orders[0];
+  const stkService = require('../services/stk.service');
+  const status = await stkService.queryStatus(checkoutRequestId);
 
-  // Update order status to paid and add receipt
-  await db.query(
-    'UPDATE orders SET status = ?, mpesa_receipt = ? WHERE id = ?',
-    ['paid', mpesaReceiptNumber || `SIM${Date.now()}`, orderId]
-  );
+  successResponse(res, status);
+});
 
-  logger.info(`Payment confirmed for order ${orderId}. Receipt: ${mpesaReceiptNumber}`);
+// @desc    Verify payment by receipt number
+// @route   GET /api/payments/verify/:receiptNumber
+const verifyPayment = asyncHandler(async (req, res) => {
+  const { receiptNumber } = req.params;
 
+  if (!receiptNumber) {
+    return errorResponse(res, 'Receipt number is required', 400);
+  }
+
+  const payment = await paymentService.verifyPayment(receiptNumber);
+
+  successResponse(res, payment);
+});
+
+// @desc    Get payment statistics
+// @route   GET /api/payments/stats
+const getPaymentStats = asyncHandler(async (req, res) => {
+  const stats = await paymentService.getPaymentStats();
+
+  successResponse(res, stats);
+});
+
+// @desc    Check M-Pesa configuration status
+// @route   GET /api/payments/status
+const getMpesaStatus = asyncHandler(async (req, res) => {
+  const isConfigured = paymentService.isMpesaConfigured();
+  
   successResponse(res, {
-    ResultCode: 0,
-    ResultDesc: 'Success',
-    MpesaReceiptNumber: mpesaReceiptNumber || `SIM${Date.now()}`
+    configured: isConfigured,
+    environment: mpesaService.environment || 'sandbox',
+    message: isConfigured 
+      ? 'M-Pesa is properly configured' 
+      : 'M-Pesa is not configured. Using simulation mode.'
   });
 });
 
 module.exports = {
   initiateSTKPush,
-  stkCallback
+  stkCallback,
+  simulateCallback,
+  queryPaymentStatus,
+  verifyPayment,
+  getPaymentStats,
+  getMpesaStatus
 };
