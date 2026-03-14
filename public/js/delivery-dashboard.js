@@ -1,5 +1,6 @@
 let refreshTimer = null;
 const chartRegistry = {};
+let assignedOrdersCache = [];
 
 const formatCurrency = (value) => `KSh ${Number(value || 0).toLocaleString('en-KE', {
     minimumFractionDigits: 0,
@@ -40,7 +41,13 @@ async function loadDashboard() {
         const payload = response.data;
 
         renderKpis(payload.performanceMetrics);
-        renderAssignedOrders(payload.ordersOverview.assignedOrders);
+        
+        // Sort assigned orders by assignedAt time (earliest first, most recent last)
+        const sortedAssignedOrders = [...payload.ordersOverview.assignedOrders].sort((a, b) => {
+            return new Date(a.assignedAt) - new Date(b.assignedAt);
+        });
+        renderAssignedOrders(sortedAssignedOrders);
+        
         renderDeliveredOrders(payload.ordersOverview.deliveredOrders);
         renderCharts(payload.analytics);
         renderAdvanced(payload.advanced);
@@ -73,8 +80,12 @@ function renderAssignedOrders(orders) {
     const wrap = document.getElementById('assignedOrdersWrap');
     if (!orders.length) {
         wrap.innerHTML = '<p>No currently assigned orders.</p>';
+        assignedOrdersCache = [];
         return;
     }
+
+    // Store orders in cache for use in markDelivered
+    assignedOrdersCache = orders;
 
     wrap.innerHTML = `
         <table>
@@ -252,11 +263,17 @@ function renderAdvanced(advanced) {
 }
 
 async function markDelivered(orderId) {
+    // Get the order details from cache
+    const order = assignedOrdersCache.find(o => o.id === orderId);
+    const customerName = order?.customerName || 'Customer';
+    
     try {
         await api.markAsDelivered(orderId);
+        // Show toast notification with order details
+        showToast(`✅ Order #${orderId} (${customerName}) marked as Delivered! 🎉`, 'success');
         await loadDashboard();
     } catch (error) {
-        alert(`Failed to mark as delivered: ${error.message}`);
+        showToast(`Failed to mark as delivered: ${error.message}`, 'error');
     }
 }
 

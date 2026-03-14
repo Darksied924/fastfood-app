@@ -110,6 +110,12 @@ function updateNavigation() {
             links += '<a href="/admin/orders">Orders</a>';
             links += '<a href="/admin/analytics">Analytics</a>';
         }
+        
+        // Manager product management access
+        if (user && user.role === 'manager') {
+            links += '<a href="/manager/products">Products</a>';
+        }
+        
         links += '<a href="#" onclick="auth.logout()">Logout</a>';
     } else {
         links += '<a href="/login">Login</a>';

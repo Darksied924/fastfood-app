@@ -252,6 +252,10 @@ async function loadAllOrders() {
 
 // Manager Dashboard
 async function loadManagerDashboard(status) {
+    // Load daily sales summary
+    await loadManagerDailySales();
+    
+    // Load orders by status
     try {
         const response = await api.getAllOrders(status);
         const orders = response.data;
@@ -260,6 +264,34 @@ async function loadManagerDashboard(status) {
         renderManagerOrdersTable(orders, container);
     } catch (error) {
         console.error('Failed to load orders:', error);
+    }
+}
+
+async function loadManagerDailySales() {
+    try {
+        const response = await api.getAnalytics({ preset: 'today' });
+        const analytics = response.data;
+        
+        // Update daily sales KPIs
+        const todaySales = document.getElementById('managerTodaySales');
+        const todayOrders = document.getElementById('managerTodayOrders');
+        const pendingOrders = document.getElementById('managerPendingOrders');
+        const completedOrders = document.getElementById('managerCompletedOrders');
+        
+        if (todaySales) {
+            todaySales.textContent = formatKsh(analytics.kpis.dailySales);
+        }
+        if (todayOrders) {
+            todayOrders.textContent = analytics.kpis.todayOrderCount || 0;
+        }
+        if (pendingOrders) {
+            pendingOrders.textContent = analytics.kpis.pendingOrders || 0;
+        }
+        if (completedOrders) {
+            completedOrders.textContent = analytics.kpis.completedOrdersToday || 0;
+        }
+    } catch (error) {
+        console.error('Failed to load daily sales:', error);
     }
 }
 
@@ -381,9 +413,9 @@ function renderManagerOrdersTable(orders, container) {
             </thead>
             <tbody>
                 ${orders.map(order => `
-                    <tr>
+                    <tr data-order-id="${order.id}">
                         <td>#${order.id}</td>
-                        <td>${order.customer_name}</td>
+                        <td class="customer-name">${order.customer_name}</td>
                         <td>${formatKsh(order.total)}</td>
                         <td>
                             <span class="status-badge status-${order.status}">${order.status}</span>
@@ -494,14 +526,19 @@ async function updateOrderStatus(orderId, status) {
 }
 
 async function markOrderAsRead(orderId) {
+    // Find the order from the current table to get details
+    const orderRow = document.querySelector(`tr[data-order-id="${orderId}"]`);
+    const customerName = orderRow?.querySelector('.customer-name')?.textContent || 'Customer';
+    
     try {
         const response = await api.updateOrderStatus(orderId, 'preparing');
         if (response.success) {
-            alert('Order moved to preparing');
+            // Show toast notification with order details
+            showToast(`✅ Order #${orderId} (${customerName}) moved to Preparing! 👨‍🍳`, 'success');
             loadManagerDashboard('paid');
         }
     } catch (error) {
-        alert('Failed to mark order as read: ' + error.message);
+        showToast('Failed to mark order as read: ' + error.message, 'error');
     }
 }
 
@@ -548,14 +585,19 @@ function showAssignModal(orderId) {
 }
 
 async function assignDelivery(orderId, deliveryId) {
+    // Get the delivery person name from the cached list
+    const deliveryPerson = deliveryPersonnelCache.find(d => String(d.id) === String(deliveryId));
+    const deliveryName = deliveryPerson?.name || 'Delivery person';
+    
     try {
         const response = await api.assignDelivery(orderId, deliveryId);
         if (response.success) {
-            alert('Delivery assigned and order moved to out_for_delivery');
+            // Show toast notification with order and delivery details
+            showToast(`🚚 Order #${orderId} assigned to ${deliveryName} and moved to Out for Delivery!`, 'success');
             loadManagerDashboard('preparing');
         }
     } catch (error) {
-        alert('Failed to assign delivery: ' + error.message);
+        showToast('Failed to assign delivery: ' + error.message, 'error');
     }
 }
 

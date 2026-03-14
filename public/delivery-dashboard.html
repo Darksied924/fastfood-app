@@ -37,7 +37,7 @@
         </div>
 
         <section class="dashboard-card delivery-priority-section">
-            <h3>Assigned Orders (Most Recent First)</h3>
+            <h3>Assigned Orders (Earliest First)</h3>
             <div id="assignedOrdersWrap"></div>
             <p class="delivery-refresh-note" data-tooltip="Orders list updates automatically every 30 seconds">Auto-refresh every 30 seconds for assigned-order updates.</p>
         </section>
@@ -75,6 +75,22 @@
     </main>
 
     <footer></footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="/js/api.js"></script>

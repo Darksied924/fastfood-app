@@ -6,6 +6,9 @@ const ROLE_LABELS = {
     customer: 'Customer'
 };
 
+let allUsers = [];
+let selectedUser = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
     if (!auth.requireAuth()) return;
     if (!auth.requireRole('admin')) return;
@@ -27,13 +30,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await api.createUser(userData);
             if (response.success) {
-                alert('User created successfully');
+                showToast('User created successfully', 'success');
                 closeModal('addUserModal');
                 addUserForm.reset();
                 await loadUsers();
             }
         } catch (error) {
-            alert(`Failed to create user: ${error.message}`);
+            showToast(`Failed to create user: ${error.message}`, 'error');
         }
     });
 });
@@ -41,15 +44,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadUsers() {
     try {
         const response = await api.getAllUsers();
-        const users = response.data;
+        allUsers = response.data;
         const container = document.getElementById('users-list');
 
-        if (!Array.isArray(users) || users.length === 0) {
+        if (!Array.isArray(allUsers) || allUsers.length === 0) {
             container.innerHTML = '<p>No users found.</p>';
             return;
         }
 
-        const groupedUsers = groupUsersByRole(users);
+        const groupedUsers = groupUsersByRole(allUsers);
         const unknownRoles = Object.keys(groupedUsers).filter((role) => !ROLE_ORDER.includes(role));
         const orderedRoles = [...ROLE_ORDER, ...unknownRoles];
 
@@ -73,6 +76,16 @@ function groupUsersByRole(users) {
     }, {});
 }
 
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
 function renderRoleSection(role, users) {
     const roleLabel = ROLE_LABELS[role] || role;
 
@@ -88,8 +101,7 @@ function renderRoleSection(role, users) {
                         <th>ID</th>
                         <th>Name</th>
                         <th>Email</th>
-                        <th>Role</th>
-                        <th>Actions</th>
+                        <th>Date Registered</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -106,44 +118,136 @@ function renderUserRow(user) {
             <td>${user.id}</td>
             <td>${user.name}</td>
             <td>${user.email}</td>
-            <td>
-                <select onchange="updateUserRole(${user.id}, this.value)">
-                    <option value="customer" ${user.role === 'customer' ? 'selected' : ''}>Customer</option>
-                    <option value="manager" ${user.role === 'manager' ? 'selected' : ''}>Manager</option>
-                    <option value="delivery" ${user.role === 'delivery' ? 'selected' : ''}>Delivery</option>
-                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
-                </select>
-            </td>
-            <td>
-                <button class="btn btn-secondary btn-small" onclick="deleteUser(${user.id})">Delete</button>
-            </td>
+            <td>${formatDate(user.created_at)}</td>
         </tr>
     `;
 }
 
-async function updateUserRole(userId, role) {
+// Edit Users Modal Functions
+function showEditUsersModal() {
+    renderRoleGroupSelector();
+    document.getElementById('editUsersModal').style.display = 'block';
+}
+
+function renderRoleGroupSelector() {
+    const groupedUsers = groupUsersByRole(allUsers);
+    const container = document.getElementById('roleGroupSelector');
+    
+    const unknownRoles = Object.keys(groupedUsers).filter((role) => !ROLE_ORDER.includes(role));
+    const orderedRoles = [...ROLE_ORDER, ...unknownRoles];
+
+    container.innerHTML = orderedRoles
+        .filter((role) => groupedUsers[role] && groupedUsers[role].length > 0)
+        .map((role) => {
+            const roleLabel = ROLE_LABELS[role] || role;
+            const users = groupedUsers[role];
+            
+            return `
+                <div class="role-group-card">
+                    <div class="role-group-header">
+                        <h4>${roleLabel}</h4>
+                        <span class="role-count">${users.length}</span>
+                    </div>
+                    <div class="role-group-users">
+                        ${users.map((user) => `
+                            <button class="user-select-btn" onclick="selectUserForEdit(${user.id})">
+                                <span class="user-select-name">${user.name}</span>
+                                <span class="user-select-email">${user.email}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+}
+
+function selectUserForEdit(userId) {
+    selectedUser = allUsers.find(u => u.id === userId);
+    if (!selectedUser) {
+        alert('User not found');
+        return;
+    }
+    
+    // Close edit users modal and open user actions modal
+    closeModal('editUsersModal');
+    showUserActionsModal();
+}
+
+function showUserActionsModal() {
+    if (!selectedUser) {
+        alert('Please select a user first');
+        return;
+    }
+    
+    const container = document.getElementById('selectedUserInfo');
+    const roleSelect = document.getElementById('editUserRole');
+    
+    // Set current role in dropdown
+    roleSelect.value = selectedUser.role;
+    
+    // Render selected user info
+    container.innerHTML = `
+        <div class="user-info-card">
+            <div class="user-avatar-large">
+                ${selectedUser.name.charAt(0).toUpperCase()}
+            </div>
+            <div class="user-details">
+                <h4>${selectedUser.name}</h4>
+                <p>${selectedUser.email}</p>
+                <span class="role-badge role-${selectedUser.role}">${ROLE_LABELS[selectedUser.role] || selectedUser.role}</span>
+                <p class="date-registered">Registered: ${formatDate(selectedUser.created_at)}</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('userActionsModal').style.display = 'block';
+}
+
+async function updateUserRoleFromModal() {
+    if (!selectedUser) return;
+    
+    const newRole = document.getElementById('editUserRole').value;
+    
     try {
-        const response = await api.updateUserRole(userId, role);
+        const response = await api.updateUserRole(selectedUser.id, newRole);
         if (response.success) {
-            alert('User role updated successfully');
+            showToast('User role updated successfully', 'success');
+            closeModal('userActionsModal');
+            selectedUser = null;
             await loadUsers();
         }
     } catch (error) {
-        alert(`Failed to update user role: ${error.message}`);
+        showToast(`Failed to update user role: ${error.message}`, 'error');
     }
 }
 
-async function deleteUser(userId) {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+async function deleteUserFromModal() {
+    showDeleteConfirmModal();
+}
 
+function showDeleteConfirmModal() {
+    if (!selectedUser) return;
+    
+    const messageEl = document.getElementById('deleteConfirmMessage');
+    messageEl.innerHTML = `Are you sure you want to delete user <strong>"${selectedUser.name}"</strong>?<br><span class="warning-text">This action cannot be undone.</span>`;
+    
+    document.getElementById('deleteConfirmModal').style.display = 'block';
+}
+
+async function confirmDeleteUser() {
+    if (!selectedUser) return;
+    
     try {
-        const response = await api.deleteUser(userId);
+        const response = await api.deleteUser(selectedUser.id);
         if (response.success) {
-            alert('User deleted successfully');
+            showToast('User deleted successfully', 'success');
+            closeModal('deleteConfirmModal');
+            closeModal('userActionsModal');
+            selectedUser = null;
             await loadUsers();
         }
     } catch (error) {
-        alert(`Failed to delete user: ${error.message}`);
+        showToast(`Failed to delete user: ${error.message}`, 'error');
     }
 }
 
@@ -155,7 +259,50 @@ function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
 
-window.updateUserRole = updateUserRole;
-window.deleteUser = deleteUser;
+// Toast Notification System
+function showToast(message, type = 'success') {
+    // Remove existing toast if any
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.textContent = message;
+    
+    // Add toast to body
+    document.body.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+};
+
+// Make functions globally available
+window.showEditUsersModal = showEditUsersModal;
 window.showAddUserModal = showAddUserModal;
 window.closeModal = closeModal;
+window.selectUserForEdit = selectUserForEdit;
+window.updateUserRoleFromModal = updateUserRoleFromModal;
+window.deleteUserFromModal = deleteUserFromModal;
+window.showDeleteConfirmModal = showDeleteConfirmModal;
+window.confirmDeleteUser = confirmDeleteUser;
+

@@ -73,7 +73,7 @@ async function loadProfile() {
         ui.profileRole.textContent = (currentUser.role || 'USER').toUpperCase();
         loadStoredImage();
     } catch (error) {
-        alert(`Failed to load profile: ${error.message}`);
+        showToast(`Failed to load profile: ${error.message}`, 'error');
     }
 }
 
@@ -88,14 +88,45 @@ function setEditMode(isEditing) {
     ui.profileEmail.disabled = !isEditing;
     ui.profilePhone.disabled = !isEditing;
 
-    ui.editProfileBtn.classList.toggle('profile-hidden', isEditing);
-    ui.saveProfileBtn.classList.toggle('profile-hidden', !isEditing);
-    ui.cancelEditBtn.classList.toggle('profile-hidden', !isEditing);
-    ui.profileImageLabel.classList.toggle('profile-hidden', !isEditing);
+    // Toggle visibility using inline styles for more reliable behavior
+    ui.editProfileBtn.style.display = isEditing ? 'none' : 'inline-block';
+    ui.saveProfileBtn.style.display = isEditing ? 'inline-block' : 'none';
+    ui.cancelEditBtn.style.display = isEditing ? 'inline-block' : 'none';
+    ui.profileImageLabel.style.display = isEditing ? 'inline-block' : 'none';
 
     if (!isEditing) {
         ui.profileImage.value = '';
     }
+}
+
+// Toast Notification System
+function showToast(message, type = 'success') {
+    // Remove existing toast if any
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.textContent = message;
+    
+    // Add toast to body
+    document.body.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
 }
 
 function getProfileImageStorageKey() {
@@ -113,13 +144,13 @@ function handleProfileImageUpload(event) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-        alert('Please choose a valid image file.');
+        showToast('Please choose a valid image file.', 'error');
         ui.profileImage.value = '';
         return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-        alert('Image must be 2MB or smaller.');
+        showToast('Image must be 2MB or smaller.', 'error');
         ui.profileImage.value = '';
         return;
     }
@@ -169,15 +200,15 @@ async function saveProfile() {
         }
 
         if (!hasProfileChanges && !hasImageChange) {
-            alert('No changes to save.');
+            showToast('No changes to save.', 'info');
             setEditMode(false);
             return;
         }
 
         resetFormToCurrentUser();
         setEditMode(false);
-        alert('Profile updated successfully');
+        showToast('Profile updated successfully', 'success');
     } catch (error) {
-        alert(`Failed to update profile: ${error.message}`);
+        showToast(`Failed to update profile: ${error.message}`, 'error');
     }
 }

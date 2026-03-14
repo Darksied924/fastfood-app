@@ -25,8 +25,9 @@
     <meta name="twitter:image" content="https://fastfood-app.com/images/og-admin-users.jpg">
     
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
 </head>
-<body>
+<body class="admin-users-page">
     <header></header>
 
     <main class="dashboard-container">
@@ -38,12 +39,16 @@
         <div class="dashboard-card">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
                 <h3 style="margin:0; border-bottom:none; padding:0;">Users by Role</h3>
-                <button class="btn btn-primary" onclick="showAddUserModal()" data-tooltip="Create a new user account">+ Add User</button>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-secondary" onclick="showEditUsersModal()" data-tooltip="Edit or delete existing users">✏️ Edit Users</button>
+                    <button class="btn btn-primary" onclick="showAddUserModal()" data-tooltip="Create a new user account">+ Add User</button>
+                </div>
             </div>
             <div id="users-list"></div>
         </div>
     </main>
 
+    <!-- Add User Modal -->
     <div id="addUserModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('addUserModal')" data-tooltip="Close this dialog">&times;</span>
@@ -79,6 +84,59 @@
         </div>
     </div>
 
+    <!-- Edit Users Modal - Step 1: Select User -->
+    <div id="editUsersModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('editUsersModal')" data-tooltip="Close this dialog">&times;</span>
+            <h3>Edit Users</h3>
+            <p class="modal-subtitle">Select a user from a role group to edit or delete</p>
+            
+            <div id="roleGroupSelector" class="role-group-selector">
+                <!-- Role groups will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal - Step 2: Edit Role or Delete -->
+    <div id="userActionsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('userActionsModal')" data-tooltip="Close this dialog">&times;</span>
+            <h3>Edit User</h3>
+            
+            <div id="selectedUserInfo" class="selected-user-info">
+                <!-- Selected user info will be rendered here -->
+            </div>
+            
+            <div class="user-action-buttons">
+                <div class="form-group">
+                    <label for="editUserRole">Change Role</label>
+                    <select id="editUserRole" name="role">
+                        <option value="customer">Customer</option>
+                        <option value="manager">Manager</option>
+                        <option value="delivery">Delivery</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <span class="field-hint">Select a new role for this user</span>
+                </div>
+                <button type="button" class="btn btn-primary btn-block" onclick="updateUserRoleFromModal()" data-tooltip="Save the new role">Save Role</button>
+                <button type="button" class="btn btn-danger btn-block" onclick="showDeleteConfirmModal()" data-tooltip="Delete this user permanently">Delete User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="delete-confirm-icon">⚠️</div>
+            <h3>Delete User</h3>
+            <p id="deleteConfirmMessage" class="delete-confirm-text"></p>
+            <div class="delete-confirm-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('deleteConfirmModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteUser()">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <footer></footer>
 
     <script src="/js/api.js"></script>
@@ -87,3 +145,4 @@
     <script src="/js/admin-users.js"></script>
 </body>
 </html>
+

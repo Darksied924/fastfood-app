@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
 </head>
-<body>
+<body class="dashboard-page">
     <header></header>
 
     <main class="dashboard-container">
@@ -98,6 +98,30 @@
 
         <!-- Manager View -->
         <div id="managerView" class="role-view" style="display: none;">
+            <!-- Daily Sales Summary -->
+            <div class="dashboard-card">
+                <h3>📊 Daily Sales</h3>
+                <div class="kpi-grid" id="manager-daily-sales">
+                    <div class="kpi-card">
+                        <small>Today's Sales</small>
+                        <strong id="managerTodaySales">--</strong>
+                    </div>
+                    <div class="kpi-card">
+                        <small>Total Orders Today</small>
+                        <strong id="managerTodayOrders">--</strong>
+                    </div>
+                    <div class="kpi-card">
+                        <small>Pending Orders</small>
+                        <strong id="managerPendingOrders">--</strong>
+                    </div>
+                    <div class="kpi-card">
+                        <small>Completed Today</small>
+                        <strong id="managerCompletedOrders">--</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Orders Management -->
             <div class="dashboard-card">
                 <div class="dashboard-tabs">
                     <button class="tab-btn active" onclick="showManagerTab('paid')" data-tooltip="View newly placed orders">New Orders</button>
@@ -177,3 +201,4 @@
     </script>
 </body>
 </html>
+

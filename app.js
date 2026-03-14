@@ -151,6 +151,10 @@ app.get('/admin/analytics', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-analytics.html'));
 });
 
+app.get('/manager/products', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'manager-products.html'));
+});
+
 // Error handling middleware (should be last)
 app.use(errorMiddleware);
 

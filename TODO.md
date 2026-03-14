@@ -1,22 +1,24 @@
-# TODO - Database Schema Migration for Order Replacements
+# Admin Users Page Refactoring TODO
 
 ## Task
-Update the database schema to support order replacements feature:
-- Add `replaces_order_id` column to orders table
-- Add 'replaced' status enum value
+Refactor Admin User View to:
+1. Keep users grouped by roles in organized sections
+2. Remove individual role change and delete buttons from each user entry
+3. Add single "Edit Users" button for managing users
+4. When Edit Users button is tapped, allow selecting a user from their role group
+5. Provide options to edit user's role or delete the user
+6. Add "Date Registered" column to all users
+7. Ensure layout stays clean and organized
 
-## Steps Completed:
-- [x] Read and analyze schema.sql to understand the target schema
-- [x] Read order.service.js to understand the code requirements
-- [x] Read db.js to understand the existing migration system
+## Steps
+- [x] 1. Analyze current implementation
+- [x] 2. Modify admin-users.html - Add Edit Users modal and update buttons
+- [x] 3. Modify admin-users.js - Implement new user management flow
+- [x] 4. Add CSS styles for new modals and user selection interface
+- [x] 5. Test the implementation
 
-## Steps Remaining:
-- [ ] Update db.js to add migration for replaces_order_id column
-- [ ] Update db.js to add migration for 'replaced' status enum
-- [ ] Test the migration by running the application
-
-## Implementation Details:
-The fix involves adding two migrations in db.js:
-1. Add `replaces_order_id` column (INT UNSIGNED NULL) with FK constraint
-2. Modify status ENUM to include 'replaced' value
+## Files to Edit
+- public/admin-users.html
+- public/js/admin-users.js
+- public/css/style.css
 
