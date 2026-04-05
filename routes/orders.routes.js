@@ -1,5 +1,6 @@
 const express = require('express');
 const ordersController = require('../controllers/orders.controller');
+const orderCancellationController = require('../controllers/orderCancellation.controller');
 const config = require('../config');
 const { protect, restrictTo } = require('../middleware/auth.middleware');
 const validate = require('../middleware/validate');
@@ -10,6 +11,11 @@ const {
   updateOrderStatusValidator,
   assignDeliveryValidator
 } = require('../middleware/orders.validator');
+const {
+  cancelOrderValidator,
+  adminOverrideCancelValidator,
+  refundReviewValidator
+} = require('../middleware/orderCancellation.validator');
 
 const router = express.Router();
 
@@ -26,12 +32,17 @@ const userCreateOrderRateLimiter = createRateLimiter({
 // Customer routes
 router.post('/', userCreateOrderRateLimiter, createOrderValidator, validate, ordersController.createOrder);
 router.get('/my-orders', ordersController.getMyOrders);
+router.post('/:id/cancel', restrictTo('customer'), cancelOrderValidator, validate, orderCancellationController.cancelOrder);
 
 // Admin and Manager routes
 router.get('/', restrictTo('admin', 'manager'), ordersController.getAllOrders);
+router.get('/cancelled', restrictTo('admin', 'manager'), orderCancellationController.getCancelledOrders);
+router.get('/cancellations', restrictTo('admin', 'manager'), orderCancellationController.getCancellationRequests);
 router.get('/delivery-personnel', restrictTo('admin', 'manager'), ordersController.getDeliveryPersonnel);
 router.get('/analytics', restrictTo('admin'), ordersController.getAnalytics);
 router.get('/analytics/export', restrictTo('admin'), ordersController.exportAnalyticsCsv);
+router.post('/:id/override-cancel', restrictTo('admin'), adminOverrideCancelValidator, validate, orderCancellationController.adminOverrideCancel);
+router.patch('/refunds/:id/review', restrictTo('admin'), refundReviewValidator, validate, orderCancellationController.reviewRefundRequest);
 router.get('/:id', orderIdValidator, validate, ordersController.getOrder);
 
 router.patch('/:id/status', restrictTo('admin', 'manager'), updateOrderStatusValidator, validate, ordersController.updateOrderStatus);

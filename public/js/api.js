@@ -132,10 +132,51 @@ const api = {
         return this.handleResponse(response);
     },
 
+    async cancelOrder(orderId, reason) {
+        const response = await fetch(`${API_BASE}/orders/${orderId}/cancel`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ reason })
+        });
+        return this.handleResponse(response);
+    },
+
     async getAllOrders(status = '') {
         const url = status ? `${API_BASE}/orders?status=${status}` : `${API_BASE}/orders`;
         const response = await fetch(url, {
             headers: this.getHeaders()
+        });
+        return this.handleResponse(response);
+    },
+
+    async getCancelledOrders() {
+        const response = await fetch(`${API_BASE}/orders/cancelled`, {
+            headers: this.getHeaders()
+        });
+        return this.handleResponse(response);
+    },
+
+    async getCancellationRequests() {
+        const response = await fetch(`${API_BASE}/orders/cancellations`, {
+            headers: this.getHeaders()
+        });
+        return this.handleResponse(response);
+    },
+
+    async adminOverrideCancel(orderId, reason = '') {
+        const response = await fetch(`${API_BASE}/orders/${orderId}/override-cancel`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ reason })
+        });
+        return this.handleResponse(response);
+    },
+
+    async reviewRefundRequest(refundId, decision, notes = '') {
+        const response = await fetch(`${API_BASE}/orders/refunds/${refundId}/review`, {
+            method: 'PATCH',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ decision, notes })
         });
         return this.handleResponse(response);
     },

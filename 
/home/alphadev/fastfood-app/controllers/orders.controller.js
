@@ -1,0 +1,119 @@
+
+const db = require('../db');
+const logger = require('../logger');
+const asyncHandler = require('../utils/asyncHandler');
+const { successResponse, errorResponse } = require('../utils/response.util');
+const orderService = require('../services/order.service');
+const orderCancellationService = require('../services/orderCancellation.service');
+
+// @desc    Create new order
+// @route   POST /api/orders
+const createOrder = asyncHandler(async (req, res) => {
+  const { items, total, phone, deliveryAddress, replacesOrderId } = req.body;
+  const userId = req.user.id;
+  const replacementOrderId = replacesOrderId ? Number(replacesOrderId) : null;
+
+  if (!items || items.length === 0) {
+    return errorResponse(res, 'Order must contain items', 400);
+  }
+
+  if (replacementOrderId) {
+    const existingOrder = await db.query(
+      'SELECT id, status FROM orders WHERE id = ? AND user_id = ?',
+      [replacementOrderId, userId]
+    );
+
+    if (existingOrder.length === 0) {
+      return errorResponse(res, 'Order to edit was not found', 404);
+    }
+
+    if (existingOrder[0].status !== 'pending') {
+      return errorResponse(res, 'Only pending orders can be edited', 400);
+    }
+  }
+
+  // Create order with transaction
+  const order = await orderService.createOrder(userId, items, total, phone, deliveryAddress, {
+    replacesOrderId: replacementOrderId
+  });
+
+  logger.info(`Order created: ${order.id} by user: ${userId}`);
+
+  successResponse(res, order, 'Order created successfully', 201);
+});
+
+// @desc    Customer cancels order
+// @route   POST /api/orders/cancel
+const cancelOrder = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const { reason } = req.body;
+  const userId = req.user.id;
+
+  if (!reason || reason.trim().length < 10) {
+    return errorResponse(res, 'Cancellation reason must be at least 10 characters', 400);
+  }
+
+  const result = await orderCancellationService.cancelOrder(Number(orderId), userId, reason.trim());
+
+  successResponse(res, result);
+});
+
+// @desc    Admin override cancel
+// @route   POST /api/orders/:id/override-cancel
+const overrideCancelOrder = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const adminId = req.user.id;
+
+  const result = await orderCancellationService.adminOverrideCancel(Number(id), adminId, reason);
+
+  successResponse(res, result);
+});
+
+// @desc    Admin review refund request
+// @route   PATCH /api/orders/refunds/:id/review
+const reviewRefundRequest = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { decision, notes } = req.body;
+  const adminId = req.user.id;
+
+  const result = await orderCancellationService.reviewRefundRequest(Number(id), adminId, decision, notes);
+
+  successResponse(res, result);
+});
+
+// @desc    Get all cancellation requests (admin/manager)
+// @route   GET /api/orders/cancellations
+const getCancellationRequests = asyncHandler(async (req, res) => {
+  const requests = await orderCancellationService.getCancellationRequests();
+  successResponse(res, requests);
+});
+
+// @desc    Get cancelled orders (manager)
+// @route   GET /api/orders/cancelled
+const getCancelledOrders = asyncHandler(async (req, res) => {
+  const orders = await orderCancellationService.getCancelledOrders();
+  successResponse(res, orders);
+});
+
+// Export all controllers
+module.exports = {
+  createOrder,
+  cancelOrder,
+  overrideCancelOrder,
+  reviewRefundRequest,
+  getCancellationRequests,
+  getCancelledOrders,
+  getAllOrders,
+  getMyOrders,
+  getOrder,
+  updateOrderStatus,
+  assignDelivery,
+  getAssignedOrders,
+  getDeliveryDashboard,
+  markAsDelivered,
+  getDeliveryPersonnel,
+  getAnalytics,
+  exportAnalyticsCsv
+};
+

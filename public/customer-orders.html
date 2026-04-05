@@ -25,6 +25,7 @@
     <meta name="twitter:image" content="https://fastfood-app.com/images/og-orders.jpg">
     
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/cancellation-styles.css">
 </head>
 <body class="customer-orders-page">
     <header></header>
@@ -69,6 +70,22 @@
                     <span id="phone-hint" class="field-hint">Enter your M-Pesa registered phone number</span>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Simulate STK Push</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="cancelModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('cancelModal')" data-tooltip="Close this dialog">&times;</span>
+            <h3>Cancel Order</h3>
+            <p>Tell us why you want to cancel this order. The final eligibility check still happens on the server.</p>
+            <form id="cancelOrderForm">
+                <input type="hidden" id="cancelOrderId" name="orderId">
+                <div class="form-group">
+                    <label for="cancelReason">Reason</label>
+                    <textarea id="cancelReason" name="reason" maxlength="500" placeholder="Changed my mind, wrong address, ordered by mistake..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger btn-block">Submit Cancellation</button>
             </form>
         </div>
     </div>

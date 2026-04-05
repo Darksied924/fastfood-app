@@ -379,6 +379,17 @@ main {
     box-shadow: 0 6px 20px rgba(247, 127, 0, 0.4);
 }
 
+.btn-danger {
+    background: linear-gradient(45deg, #dc2626, #b91c1c);
+    color: white;
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+}
+
+.btn-danger:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+}
+
 .btn-large {
     padding: 1rem 2.5rem;
     font-size: 1.2rem;
@@ -1074,6 +1085,11 @@ tr:hover {
     color: white;
 }
 
+.status-cancelled {
+    background: #dc3545;
+    color: white;
+}
+
 .read-state-badge {
     text-transform: uppercase;
     letter-spacing: 0.3px;
@@ -1349,6 +1365,22 @@ footer {
     background: #d1ecf1;
     color: #0c5460;
     border: 1px solid #bee5eb;
+}
+
+.actions-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.actions-cell select {
+    min-width: 9.5rem;
+}
+
+.status-note {
+    color: #666;
+    font-size: 0.9rem;
 }
 
 /* Auth Page Enhancements */

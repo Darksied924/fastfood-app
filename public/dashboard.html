@@ -124,10 +124,11 @@
             <!-- Orders Management -->
             <div class="dashboard-card">
                 <div class="dashboard-tabs">
-                    <button class="tab-btn active" onclick="showManagerTab('paid')" data-tooltip="View newly placed orders">New Orders</button>
-                    <button class="tab-btn" onclick="showManagerTab('preparing')" data-tooltip="View orders being prepared">Preparing</button>
-                    <button class="tab-btn" onclick="showManagerTab('out_for_delivery')" data-tooltip="View orders out for delivery">Out for Delivery</button>
-                    <button class="tab-btn" onclick="showManagerTab('delivered')" data-tooltip="View completed orders">Delivered</button>
+                    <button class="tab-btn active" onclick="showManagerTab('paid', this)" data-tooltip="View newly placed orders">New Orders</button>
+                    <button class="tab-btn" onclick="showManagerTab('preparing', this)" data-tooltip="View orders being prepared">Preparing</button>
+                    <button class="tab-btn" onclick="showManagerTab('out_for_delivery', this)" data-tooltip="View orders out for delivery">Out for Delivery</button>
+                    <button class="tab-btn" onclick="showManagerTab('delivered', this)" data-tooltip="View completed orders">Delivered</button>
+                    <button class="tab-btn" onclick="showManagerTab('cancelled', this)" data-tooltip="View cancelled orders and refund state">Cancelled</button>
                 </div>
                 <div id="manager-orders-list" style="margin-top: 1rem;"></div>
             </div>

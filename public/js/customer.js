@@ -1,5 +1,6 @@
 let currentCustomer = null;
 let customerOrdersCache = {};
+const CANCELLATION_WINDOW_MS = 10 * 60 * 1000;
 const formatKsh = (amount) => `KSh ${Number(amount || 0).toLocaleString('en-KE', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     renderCustomerHeader();
     initializeFloatingCartButton();
+    bindCancellationForm();
     await loadCustomerPageContent();
 });
 
@@ -91,6 +93,91 @@ function initializeFloatingCartButton() {
     });
 }
 
+function bindCancellationForm() {
+    const cancelOrderForm = document.getElementById('cancelOrderForm');
+    if (!cancelOrderForm) return;
+
+    cancelOrderForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const orderId = Number(document.getElementById('cancelOrderId').value);
+        const reason = String(document.getElementById('cancelReason').value || '').trim();
+        const submitButton = cancelOrderForm.querySelector('button[type="submit"]');
+
+        if (!orderId || !reason) {
+            cart.showNotification('Please provide a cancellation reason.');
+            return;
+        }
+
+        try {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+
+            const response = await api.cancelOrder(orderId, reason);
+            closeModal('cancelModal');
+            cancelOrderForm.reset();
+            cart.showNotification(response.message || 'Order cancelled successfully.');
+            await loadCustomerOrders();
+        } catch (error) {
+            cart.showNotification(error.message || 'Failed to cancel order.');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit Cancellation';
+        }
+    });
+}
+
+function getCancellationState(order) {
+    if (!order || !['pending', 'paid'].includes(order.status)) {
+        return { eligible: false, timeLeftMs: 0, label: '' };
+    }
+
+    const createdAt = new Date(order.created_at);
+    const elapsed = Date.now() - createdAt.getTime();
+    const timeLeftMs = CANCELLATION_WINDOW_MS - elapsed;
+
+    if (!Number.isFinite(timeLeftMs) || timeLeftMs <= 0) {
+        return { eligible: false, timeLeftMs: 0, label: '' };
+    }
+
+    const minutes = Math.floor(timeLeftMs / 60000);
+    const seconds = Math.floor((timeLeftMs % 60000) / 1000);
+
+    return {
+        eligible: true,
+        timeLeftMs,
+        label: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    };
+}
+
+function openCancelModal(orderId) {
+    const order = customerOrdersCache[orderId];
+    if (!order) {
+        cart.showNotification('Unable to load this order.');
+        return;
+    }
+
+    const cancellationState = getCancellationState(order);
+    if (!cancellationState.eligible) {
+        cart.showNotification('This order is no longer eligible for cancellation.');
+        return;
+    }
+
+    const orderIdInput = document.getElementById('cancelOrderId');
+    const reasonInput = document.getElementById('cancelReason');
+    const modal = document.getElementById('cancelModal');
+
+    if (!orderIdInput || !reasonInput || !modal) {
+        cart.showNotification('Cancellation dialog is not available on this page.');
+        return;
+    }
+
+    orderIdInput.value = String(orderId);
+    reasonInput.value = '';
+    modal.style.display = 'block';
+    reasonInput.focus();
+}
+
 async function loadCustomerPageContent() {
     if (document.getElementById('customer-products')) {
         await loadCustomerProducts();
@@ -144,13 +231,17 @@ async function loadCustomerOrders() {
         container.innerHTML = orders.map(order => `
             <div class="order-card">
                 <div class="order-header">
-                    <span>Order #${order.id}</span>
+                    <span>
+                        Order #${order.id}
+                        ${getCancellationState(order).eligible ? '<span class="cancel-eligible-badge">Can Cancel</span>' : ''}
+                    </span>
                     <span class="status-badge status-${order.status}">${order.status}</span>
                 </div>
                 <div class="order-details">
                     <p>Total: ${formatKsh(order.total)}</p>
                     <p>Date: ${new Date(order.created_at).toLocaleString()}</p>
                     ${order.delivery_name ? `<p>Delivery: ${order.delivery_name}</p>` : ''}
+                    ${getCancellationState(order).eligible ? `<p class="cancel-time">Cancellation window ends in <span class="countdown">${getCancellationState(order).label}</span></p>` : ''}
                 </div>
                 <div class="order-items">
                     ${order.items.map(item => `
@@ -167,6 +258,11 @@ async function loadCustomerOrders() {
                         </button>
                         <button class="btn btn-secondary" onclick="startOrderEdit(${order.id})">
                             Edit Order
+                        </button>
+                    ` : ''}
+                    ${getCancellationState(order).eligible ? `
+                        <button class="btn btn-danger" onclick="requestOrderCancellation(${order.id})">
+                            Cancel Order
                         </button>
                     ` : ''}
                 </div>
@@ -230,3 +326,4 @@ function clearCart() {
 window.checkout = checkout;
 window.clearCart = clearCart;
 window.closeModal = closeModal;
+window.requestOrderCancellation = openCancelModal;

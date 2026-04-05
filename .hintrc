@@ -9,11 +9,19 @@
         "select-name": "off"
       }
     ],
+<<<<<<< HEAD
     "compat-api/css": [
       "default",
       {
         "ignore": [
           "backdrop-filter"
+=======
+    "compat-api/html": [
+      "default",
+      {
+        "ignore": [
+          "meta[name=theme-color]"
+>>>>>>> 31dae00 (added order cancellation feature# Please enter the commit message for your changes. Lines starting)
         ]
       }
     ]

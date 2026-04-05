@@ -1,6 +1,7 @@
 // Dashboard functionality
 let currentUser = null;
 let deliveryPersonnelCache = [];
+let currentManagerTabStatus = 'paid';
 
 const formatKsh = (amount) => `KSh ${Number(amount || 0).toLocaleString('en-KE', {
     minimumFractionDigits: 0,
@@ -257,11 +258,17 @@ async function loadManagerDashboard(status) {
     
     // Load orders by status
     try {
-        const response = await api.getAllOrders(status);
-        const orders = response.data;
         const container = document.getElementById('manager-orders-list');
+        currentManagerTabStatus = status;
 
-        renderManagerOrdersTable(orders, container);
+        if (status === 'cancelled') {
+            const response = await api.getCancelledOrders();
+            renderCancelledOrdersTable(response.data, container);
+            return;
+        }
+
+        const response = await api.getAllOrders(status);
+        renderManagerOrdersTable(response.data, container);
     } catch (error) {
         console.error('Failed to load orders:', error);
     }
@@ -445,6 +452,42 @@ function renderManagerOrdersTable(orders, container) {
     `;
 }
 
+function renderCancelledOrdersTable(orders, container) {
+    if (orders.length === 0) {
+        container.innerHTML = '<p>No cancelled orders found</p>';
+        return;
+    }
+
+    container.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Total</th>
+                    <th>Cancelled At</th>
+                    <th>Reason</th>
+                    <th>Refund</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${orders.map(order => `
+                    <tr>
+                        <td>#${order.id}</td>
+                        <td>${order.customer_name}</td>
+                        <td>${formatKsh(order.total)}</td>
+                        <td>${new Date(order.cancelled_at).toLocaleString()}</td>
+                        <td>${order.reason || 'Not provided'}</td>
+                        <td>${order.refund_status || 'Not required'}</td>
+                        <td><span style="color:#666; font-size:0.9rem;">No action</span></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
 function getReadBadge(managerReadAt) {
     if (managerReadAt) {
         return '<span class="status-badge read-state-badge read-state-read">Read</span>';
@@ -461,9 +504,11 @@ function showTab(tabName) {
     document.getElementById(`${tabName}Tab`).classList.add('active');
 }
 
-function showManagerTab(status) {
+function showManagerTab(status, button = null) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    if (button) {
+        button.classList.add('active');
+    }
     loadManagerDashboard(status);
 }
 

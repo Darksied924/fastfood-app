@@ -28,6 +28,84 @@ const ensureTableColumn = async (connection, tableName, columnName, alterSql) =>
   logger.info(`Schema update complete: added ${tableName}.${columnName} column.`);
 };
 
+const ensureColumnDefinition = async (connection, tableName, columnName, targetDefinition) => {
+  const [columns] = await connection.execute(
+    `SELECT COLUMN_TYPE, IS_NULLABLE
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+
+  if (columns.length === 0) {
+    return;
+  }
+
+  const currentType = String(columns[0].COLUMN_TYPE || '').toLowerCase();
+  const currentNullable = String(columns[0].IS_NULLABLE || '').toUpperCase();
+  const normalizedTarget = String(targetDefinition || '').toLowerCase();
+  const expectsNull = normalizedTarget.includes(' null');
+  const nullableMatches = expectsNull ? currentNullable === 'YES' : currentNullable === 'NO';
+
+  if (currentType === normalizedTarget.split(' null')[0].split(' not null')[0] && nullableMatches) {
+    return;
+  }
+
+  logger.warn(`Column definition mismatch detected for ${tableName}.${columnName}. Aligning schema.`);
+  await connection.execute(
+    `ALTER TABLE ${tableName} MODIFY COLUMN ${columnName} ${targetDefinition}`
+  );
+  logger.info(`Column definition aligned for ${tableName}.${columnName}.`);
+};
+
+const getColumnDefinition = async (connection, tableName, columnName) => {
+  const [columns] = await connection.execute(
+    `SELECT COLUMN_TYPE, IS_NULLABLE
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+
+  if (columns.length === 0) {
+    return null;
+  }
+
+  return {
+    columnType: columns[0].COLUMN_TYPE,
+    isNullable: columns[0].IS_NULLABLE === 'YES'
+  };
+};
+
+const ensureColumnMatchesReferencedColumn = async (
+  connection,
+  tableName,
+  columnName,
+  referencedTable,
+  referencedColumn,
+  options = {}
+) => {
+  const localColumn = await getColumnDefinition(connection, tableName, columnName);
+  if (!localColumn) {
+    return;
+  }
+
+  const referenced = await getColumnDefinition(connection, referencedTable, referencedColumn);
+  if (!referenced) {
+    return;
+  }
+
+  const nullability = options.nullable === false ? 'NOT NULL' : 'NULL';
+  const afterClause = options.after ? ` AFTER ${options.after}` : '';
+  const targetDefinition = `${referenced.columnType} ${nullability}${afterClause}`;
+
+  await ensureColumnDefinition(connection, tableName, columnName, targetDefinition);
+};
+
 const ensureUsersSchema = async (connection) => {
   await ensureTableColumn(
     connection,
@@ -113,7 +191,7 @@ const ensureReplacesColumnDefinition = async (connection, columnType) => {
   );
 };
 
-const ensureStatusEnumIncludesReplaced = async (connection) => {
+const ensureStatusEnumIncludesRequiredValues = async (connection) => {
   const [columns] = await connection.execute(
     `SELECT COLUMN_TYPE
      FROM INFORMATION_SCHEMA.COLUMNS
@@ -128,12 +206,15 @@ const ensureStatusEnumIncludesReplaced = async (connection) => {
   }
 
   const columnType = columns[0].COLUMN_TYPE || '';
-  if (!columnType.includes("'replaced'")) {
-    logger.warn('orders.status enum is missing the replaced value; updating.');
+  const requiredValues = ['pending', 'paid', 'preparing', 'out_for_delivery', 'delivered', 'replaced', 'cancelled'];
+  const missingValues = requiredValues.filter((value) => !columnType.includes(`'${value}'`));
+
+  if (missingValues.length > 0) {
+    logger.warn(`orders.status enum is missing values (${missingValues.join(', ')}); updating.`);
     await connection.execute(
-      "ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','preparing','out_for_delivery','delivered','replaced') NOT NULL DEFAULT 'pending'"
+      "ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','preparing','out_for_delivery','delivered','replaced','cancelled') NOT NULL DEFAULT 'pending'"
     );
-    logger.info('Added replaced state to orders.status enum.');
+    logger.info('Updated orders.status enum with required values.');
   }
 };
 
@@ -217,14 +298,6 @@ const ensureOrdersSchema = async (connection) => {
     'ALTER TABLE orders ADD CONSTRAINT fk_orders_replacement FOREIGN KEY (replaces_order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE SET NULL'
   );
 
-  // Add 'replaced' status enum value
-  await ensureTableColumn(
-    connection,
-    'orders',
-    'status',
-    "ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','preparing','out_for_delivery','delivered','replaced') NOT NULL DEFAULT 'pending'"
-  );
-
   await ensureTableColumn(
     connection,
     'orders',
@@ -232,7 +305,7 @@ const ensureOrdersSchema = async (connection) => {
     'ALTER TABLE orders ADD COLUMN paid_at DATETIME NULL AFTER notes'
   );
 
-  await ensureStatusEnumIncludesReplaced(connection);
+  await ensureStatusEnumIncludesRequiredValues(connection);
 };
 
 const ensureProductsSchema = async (connection) => {
@@ -258,6 +331,152 @@ const ensureExpensesSchema = async (connection) => {
       INDEX idx_expenses_expense_date (expense_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+};
+
+const ensureOrderCancellationSchema = async (connection) => {
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS order_cancellations (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      order_id INT UNSIGNED NOT NULL,
+      user_id INT UNSIGNED NULL,
+      reason VARCHAR(500) NOT NULL,
+      cancelled_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      is_admin_override BOOLEAN NOT NULL DEFAULT FALSE,
+      admin_notes TEXT NULL,
+      admin_id INT UNSIGNED NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_cancellation_order (order_id),
+      INDEX idx_cancellation_user (user_id),
+      INDEX idx_cancellation_admin (admin_id),
+      INDEX idx_cancellation_time (cancelled_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await ensureTableEngineInnoDB(connection, 'order_cancellations');
+
+  await ensureTableColumn(
+    connection,
+    'order_cancellations',
+    'admin_notes',
+    'ALTER TABLE order_cancellations ADD COLUMN admin_notes TEXT NULL AFTER is_admin_override'
+  );
+
+  await ensureTableColumn(
+    connection,
+    'order_cancellations',
+    'admin_id',
+    'ALTER TABLE order_cancellations ADD COLUMN admin_id INT UNSIGNED NULL AFTER admin_notes'
+  );
+
+  await ensureColumnMatchesReferencedColumn(connection, 'order_cancellations', 'order_id', 'orders', 'id', {
+    nullable: false,
+    after: 'id'
+  });
+  await ensureColumnMatchesReferencedColumn(connection, 'order_cancellations', 'user_id', 'users', 'id', {
+    nullable: true,
+    after: 'order_id'
+  });
+  await ensureColumnMatchesReferencedColumn(connection, 'order_cancellations', 'admin_id', 'users', 'id', {
+    nullable: true,
+    after: 'admin_notes'
+  });
+
+  await ensureIndex(
+    connection,
+    'order_cancellations',
+    'idx_cancellation_order',
+    'CREATE INDEX idx_cancellation_order ON order_cancellations (order_id)'
+  );
+  await ensureIndex(
+    connection,
+    'order_cancellations',
+    'idx_cancellation_user',
+    'CREATE INDEX idx_cancellation_user ON order_cancellations (user_id)'
+  );
+  await ensureIndex(
+    connection,
+    'order_cancellations',
+    'idx_cancellation_admin',
+    'CREATE INDEX idx_cancellation_admin ON order_cancellations (admin_id)'
+  );
+
+  await ensureForeignKey(
+    connection,
+    'fk_cancellation_order',
+    'order_cancellations',
+    'ALTER TABLE order_cancellations ADD CONSTRAINT fk_cancellation_order FOREIGN KEY (order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE CASCADE'
+  );
+
+  await ensureForeignKey(
+    connection,
+    'fk_cancellation_user',
+    'order_cancellations',
+    'ALTER TABLE order_cancellations ADD CONSTRAINT fk_cancellation_user FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL'
+  );
+
+  await ensureForeignKey(
+    connection,
+    'fk_cancellation_admin',
+    'order_cancellations',
+    'ALTER TABLE order_cancellations ADD CONSTRAINT fk_cancellation_admin FOREIGN KEY (admin_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL'
+  );
+};
+
+const ensureRefundRequestsSchema = async (connection) => {
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS refund_requests (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      cancellation_id INT UNSIGNED NOT NULL,
+      status ENUM('REQUESTED', 'APPROVED', 'DENIED', 'PROCESSED') NOT NULL DEFAULT 'REQUESTED',
+      admin_id INT UNSIGNED NULL,
+      admin_notes TEXT NULL,
+      processed_at DATETIME NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_refund_status (status),
+      INDEX idx_refund_cancellation (cancellation_id),
+      INDEX idx_refund_processed (processed_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await ensureTableEngineInnoDB(connection, 'refund_requests');
+
+  await ensureColumnMatchesReferencedColumn(connection, 'refund_requests', 'cancellation_id', 'order_cancellations', 'id', {
+    nullable: false,
+    after: 'id'
+  });
+  await ensureColumnMatchesReferencedColumn(connection, 'refund_requests', 'admin_id', 'users', 'id', {
+    nullable: true,
+    after: 'status'
+  });
+
+  await ensureIndex(
+    connection,
+    'refund_requests',
+    'idx_refund_cancellation',
+    'CREATE INDEX idx_refund_cancellation ON refund_requests (cancellation_id)'
+  );
+  await ensureIndex(
+    connection,
+    'refund_requests',
+    'idx_refund_admin',
+    'CREATE INDEX idx_refund_admin ON refund_requests (admin_id)'
+  );
+
+  await ensureForeignKey(
+    connection,
+    'fk_refund_cancellation',
+    'refund_requests',
+    'ALTER TABLE refund_requests ADD CONSTRAINT fk_refund_cancellation FOREIGN KEY (cancellation_id) REFERENCES order_cancellations(id) ON UPDATE CASCADE ON DELETE CASCADE'
+  );
+
+  await ensureForeignKey(
+    connection,
+    'fk_refund_admin',
+    'refund_requests',
+    'ALTER TABLE refund_requests ADD CONSTRAINT fk_refund_admin FOREIGN KEY (admin_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL'
+  );
 };
 
 const ensureIndex = async (connection, tableName, indexName, createIndexSql) => {
@@ -319,6 +538,8 @@ const testConnection = async () => {
     await ensureProductsSchema(connection);
     await ensureOrdersSchema(connection);
     await ensureExpensesSchema(connection);
+    await ensureOrderCancellationSchema(connection);
+    await ensureRefundRequestsSchema(connection);
     await ensureAnalyticsIndexes(connection);
     logger.info('Database connected successfully');
     return true;
