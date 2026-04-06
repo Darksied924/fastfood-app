@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "FastFood App API",
+    "title": "CraveDash App API",
     "version": "1.0.0",
     "description": "API documentation for the Fast Food Order and Delivery Management System."
   },

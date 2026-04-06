@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cart - FastFood</title>
+    <title>Cart - CraveDash</title>
     <meta name="description" content="Review your cart items and proceed to checkout">
-    <meta name="author" content="FastFood Kenya">
+    <meta name="author" content="CraveDash Kenya">
     <meta name="theme-color" content="#ff6b35">
     <meta name="robots" content="noindex, nofollow">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://fastfood-app.com/customer/cart">
-    <meta property="og:title" content="Cart - FastFood">
+    <meta property="og:url" content="https://cravedash.app/customer/cart">
+    <meta property="og:title" content="Cart - CraveDash">
     <meta property="og:description" content="Review your cart items and proceed to checkout">
-    <meta property="og:image" content="https://fastfood-app.com/images/og-cart.jpg">
-    <meta property="og:site_name" content="FastFood Kenya">
+    <meta property="og:image" content="https://cravedash.app/images/og-cart.jpg">
+    <meta property="og:site_name" content="CraveDash Kenya">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:url" content="https://fastfood-app.com/customer/cart">
-    <meta name="twitter:title" content="Cart - FastFood">
+    <meta name="twitter:url" content="https://cravedash.app/customer/cart">
+    <meta name="twitter:title" content="Cart - CraveDash">
     <meta name="twitter:description" content="Review your cart items and proceed to checkout">
-    <meta name="twitter:image" content="https://fastfood-app.com/images/og-cart.jpg">
+    <meta name="twitter:image" content="https://cravedash.app/images/og-cart.jpg">
     
     <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -99,6 +99,18 @@
                 <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Pay with M-Pesa</button>
             </form>
             <div id="paymentStatus" class="payment-status" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div id="clearCartModal" class="modal">
+        <div class="modal-content clear-cart-modal">
+            <span class="close" onclick="closeModal('clearCartModal')" data-tooltip="Close this dialog">&times;</span>
+            <h3>Clear cart</h3>
+            <p>Remove all items from your cart?</p>
+            <div class="clear-cart-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('clearCartModal')">Keep items</button>
+                <button type="button" class="btn btn-danger" onclick="confirmClearCart()">Clear cart</button>
+            </div>
         </div>
     </div>
 

@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - FastFood</title>
-    <meta name="description" content="Log in to your FastFood account to order delicious food">
-    <meta name="author" content="FastFood Kenya">
+    <title>Login - CraveDash</title>
+    <meta name="description" content="Log in to your CraveDash account to order delicious food">
+    <meta name="author" content="CraveDash Kenya">
     <meta name="theme-color" content="#ff6b35">
     <meta name="robots" content="noindex, nofollow">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://fastfood-app.com/login">
-    <meta property="og:title" content="Login - FastFood">
-    <meta property="og:description" content="Log in to your FastFood account to order delicious food">
-    <meta property="og:image" content="https://fastfood-app.com/images/og-login.jpg">
-    <meta property="og:site_name" content="FastFood Kenya">
+    <meta property="og:url" content="https://cravedash.app/login">
+    <meta property="og:title" content="Login - CraveDash">
+    <meta property="og:description" content="Log in to your CraveDash account to order delicious food">
+    <meta property="og:image" content="https://cravedash.app/images/og-login.jpg">
+    <meta property="og:site_name" content="CraveDash Kenya">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:url" content="https://fastfood-app.com/login">
-    <meta name="twitter:title" content="Login - FastFood">
-    <meta name="twitter:description" content="Log in to your FastFood account to order delicious food">
-    <meta name="twitter:image" content="https://fastfood-app.com/images/og-login.jpg">
+    <meta name="twitter:url" content="https://cravedash.app/login">
+    <meta name="twitter:title" content="Login - CraveDash">
+    <meta name="twitter:description" content="Log in to your CraveDash account to order delicious food">
+    <meta name="twitter:image" content="https://cravedash.app/images/og-login.jpg">
     
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
@@ -76,11 +76,12 @@
             </div>
             
             <div class="social-login">
-                <button class="social-btn google" data-tooltip="Sign in with your Google account">
+                <button id="googleFallbackBtn" class="social-btn google is-disabled" type="button" data-tooltip="Sign in with your Google account">
                     <span class="social-icon">G</span>
                     <span>Google</span>
                 </button>
-                <button class="social-btn facebook" data-tooltip="Sign in with your Facebook account">
+                <div id="googleSignInMount" class="google-signin-mount" hidden></div>
+                <button id="facebookLoginBtn" class="social-btn facebook is-disabled" type="button" data-tooltip="Sign in with your Facebook account">
                     <span class="social-icon">f</span>
                     <span>Facebook</span>
                 </button>
@@ -144,6 +145,216 @@
             }, 3000);
         }
 
+        function completeLogin(response) {
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify({
+                id: response.data.id,
+                name: response.data.name,
+                email: response.data.email,
+                role: response.data.role
+            }));
+
+            showToast('Login successful! Redirecting...', 'success');
+
+            setTimeout(() => {
+                const redirectPath = response.data.role === 'customer'
+                    ? '/customer/menu'
+                    : (response.data.role === 'delivery' ? '/delivery/dashboard' : '/dashboard');
+                window.location.href = redirectPath;
+            }, 1000);
+        }
+
+        let facebookAuthConfig = null;
+
+        async function loadGoogleScript() {
+            if (window.google && window.google.accounts && window.google.accounts.id) {
+                return;
+            }
+
+            await new Promise((resolve, reject) => {
+                const existing = document.querySelector('script[data-google-identity]');
+                if (existing) {
+                    existing.addEventListener('load', resolve, { once: true });
+                    existing.addEventListener('error', reject, { once: true });
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = 'https://accounts.google.com/gsi/client';
+                script.async = true;
+                script.defer = true;
+                script.dataset.googleIdentity = 'true';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        async function loadFacebookScript() {
+            if (window.FB) {
+                return;
+            }
+
+            await new Promise((resolve, reject) => {
+                const deadline = Date.now() + 5000;
+                const waitForSdk = () => {
+                    if (window.FB) {
+                        resolve();
+                        return;
+                    }
+
+                    if (Date.now() >= deadline) {
+                        reject(new Error('Facebook Sign-In script failed to load'));
+                        return;
+                    }
+
+                    setTimeout(waitForSdk, 50);
+                };
+
+                const existing = document.querySelector('script[data-facebook-sdk]');
+                if (existing) {
+                    waitForSdk();
+                    existing.addEventListener('error', reject, { once: true });
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = 'https://connect.facebook.net/en_US/sdk.js';
+                script.async = true;
+                script.defer = true;
+                script.dataset.facebookSdk = 'true';
+                script.onload = waitForSdk;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        async function handleGoogleCredentialResponse(googleResponse) {
+            try {
+                showToast('Signing in with Google...', 'info');
+                const response = await api.googleLogin(googleResponse.credential);
+                if (response.success) {
+                    completeLogin(response);
+                }
+            } catch (error) {
+                showToast(error.message || 'Google Sign-In failed', 'error');
+            }
+        }
+
+        async function initializeGoogleSignIn() {
+            const fallbackBtn = document.getElementById('googleFallbackBtn');
+            const mount = document.getElementById('googleSignInMount');
+
+            if (!fallbackBtn || !mount) {
+                return;
+            }
+
+            fallbackBtn.addEventListener('click', () => {
+                showToast('Google Sign-In is not available yet on this environment.', 'info');
+            });
+
+            try {
+                const response = await api.getGoogleAuthConfig();
+                const googleConfig = response.data || {};
+
+                if (!googleConfig.enabled || !googleConfig.clientId) {
+                    return;
+                }
+
+                await loadGoogleScript();
+
+                if (!(window.google && window.google.accounts && window.google.accounts.id)) {
+                    throw new Error('Google Sign-In script failed to load');
+                }
+
+                window.google.accounts.id.initialize({
+                    client_id: googleConfig.clientId,
+                    callback: handleGoogleCredentialResponse
+                });
+
+                mount.hidden = false;
+                mount.classList.add('is-ready');
+                fallbackBtn.style.display = 'none';
+
+                window.google.accounts.id.renderButton(mount, {
+                    theme: 'outline',
+                    size: 'large',
+                    shape: 'pill',
+                    text: 'signin_with',
+                    width: 240
+                });
+            } catch (error) {
+                console.error('Google Sign-In initialization failed:', error);
+            }
+        }
+
+        async function handleFacebookLoginClick() {
+            if (!(facebookAuthConfig && facebookAuthConfig.enabled && window.FB)) {
+                showToast('Facebook Sign-In is not available yet on this environment.', 'info');
+                return;
+            }
+
+            window.FB.login(async (loginResponse) => {
+                try {
+                    const authResponse = loginResponse && loginResponse.authResponse;
+
+                    if (!authResponse || !authResponse.accessToken) {
+                        showToast('Facebook Sign-In was cancelled.', 'info');
+                        return;
+                    }
+
+                    showToast('Signing in with Facebook...', 'info');
+                    const response = await api.facebookLogin(authResponse.accessToken);
+
+                    if (response.success) {
+                        completeLogin(response);
+                    }
+                } catch (error) {
+                    showToast(error.message || 'Facebook Sign-In failed', 'error');
+                }
+            }, {
+                scope: 'public_profile,email',
+                return_scopes: true
+            });
+        }
+
+        async function initializeFacebookSignIn() {
+            const facebookBtn = document.getElementById('facebookLoginBtn');
+
+            if (!facebookBtn) {
+                return;
+            }
+
+            facebookBtn.addEventListener('click', handleFacebookLoginClick);
+
+            try {
+                const response = await api.getFacebookAuthConfig();
+                const config = response.data || {};
+
+                if (!config.enabled || !config.appId) {
+                    return;
+                }
+
+                await loadFacebookScript();
+
+                if (!window.FB) {
+                    throw new Error('Facebook Sign-In script failed to load');
+                }
+
+                window.FB.init({
+                    appId: config.appId,
+                    cookie: true,
+                    xfbml: false,
+                    version: config.apiVersion || 'v22.0'
+                });
+
+                facebookAuthConfig = config;
+                facebookBtn.classList.remove('is-disabled');
+            } catch (error) {
+                console.error('Facebook Sign-In initialization failed:', error);
+            }
+        }
+
         // Client-side validation
         function validateLoginForm() {
             clearFieldErrors();
@@ -194,22 +405,7 @@
                 const response = await api.login(email, password);
                 
                 if (response.success) {
-                    localStorage.setItem('token', response.data.token);
-                    localStorage.setItem('user', JSON.stringify({
-                        id: response.data.id,
-                        name: response.data.name,
-                        email: response.data.email,
-                        role: response.data.role
-                    }));
-                    
-                    showToast('Login successful! Redirecting...', 'success');
-                    
-                    setTimeout(() => {
-                        const redirectPath = response.data.role === 'customer'
-                            ? '/customer/menu'
-                            : (response.data.role === 'delivery' ? '/delivery/dashboard' : '/dashboard');
-                        window.location.href = redirectPath;
-                    }, 1000);
+                    completeLogin(response);
                 } else {
                     showToast(response.message || 'Login failed', 'error');
                     
@@ -293,6 +489,9 @@
                 input.parentElement.classList.add('focused');
             }
         });
+
+        initializeGoogleSignIn();
+        initializeFacebookSignIn();
     </script>
 </body>
 </html>

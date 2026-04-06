@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancel Order - CraveDash</title>
+    <meta name="description" content="Review cancellation terms before cancelling your CraveDash order">
+    <meta name="author" content="CraveDash Kenya">
+    <meta name="theme-color" content="#ff6b35">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="customer-orders-page customer-cancel-page">
+    <header></header>
+
+    <main class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>Welcome, <span id="userName">User</span>!</h1>
+            <div class="header-actions">
+                <a href="/customer/menu" class="btn btn-secondary header-action-btn" data-tooltip="Browse menu items">Menu</a>
+                <a href="/customer/orders" class="btn btn-secondary header-action-btn" data-tooltip="Go back to your orders">My Orders</a>
+                <a href="/customer/cart" class="header-cart-btn" id="headerCartBtn" aria-label="Go to cart" data-tooltip="View your cart and checkout">
+                    <span class="header-cart-icon">🛒</span>
+                    <span class="header-cart-count" id="headerCartCount">0</span>
+                </a>
+            </div>
+        </div>
+
+        <section id="cancelTermsPage" class="dashboard-card cancel-page-shell">
+            <div class="cancel-page-hero">
+                <span class="cancel-page-eyebrow">Order cancellation</span>
+                <h3>Review the cancellation terms carefully</h3>
+                <p class="cancel-page-lead">
+                    Confirm that you understand the rules below before submitting your cancellation request.
+                </p>
+            </div>
+
+            <div class="cancel-page-grid">
+                <article class="cancel-page-summary">
+                    <small>Order reference</small>
+                    <strong id="cancelOrderReference">--</strong>
+                    <p id="cancelEligibilityState" class="cancel-page-status cancel-page-status--active">
+                        Loading cancellation eligibility for this order.
+                    </p>
+
+                    <div class="cancel-page-summary-grid">
+                        <div>
+                            <small>Order total</small>
+                            <strong id="cancelOrderTotal">--</strong>
+                        </div>
+                        <div>
+                            <small>Created at</small>
+                            <strong id="cancelOrderDate">--</strong>
+                        </div>
+                        <div>
+                            <small>Current status</small>
+                            <strong id="cancelOrderStatus">--</strong>
+                        </div>
+                        <div>
+                            <small>Time left to cancel</small>
+                            <strong id="cancelWindowCountdown">--:--</strong>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="cancel-page-rules">
+                    <small>Rules and terms</small>
+                    <ul>
+                        <li>Cancellation is only available for paid orders within 5 minutes of order creation.</li>
+                        <li>If the order has already moved beyond the allowed cancellation window, the request cannot be submitted.</li>
+                        <li>Submitting this request cancels the order immediately, subject to any refund review already defined by the payment flow.</li>
+                        <li>You should provide an accurate reason so the team can review the request correctly.</li>
+                    </ul>
+                </article>
+            </div>
+
+            <form id="cancelOrderForm" class="cancel-page-form">
+                <input type="hidden" id="cancelOrderId" name="orderId">
+
+                <div class="form-group">
+                    <label for="cancelReason">Reason for cancellation</label>
+                    <textarea id="cancelReason" name="reason" maxlength="500" placeholder="Explain why you want to cancel this order..." required></textarea>
+                </div>
+
+                <label class="cancel-page-agreement">
+                    <input type="checkbox" id="cancelAgreement" name="agreement">
+                    <span>I have read the cancellation terms above and I agree to proceed with this cancellation request.</span>
+                </label>
+
+                <div class="cancel-page-actions">
+                    <a href="/customer/orders" class="btn btn-secondary">Go back</a>
+                    <button type="submit" class="btn btn-danger">Confirm cancellation</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer></footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/cart.js"></script>
+    <script src="/js/customer.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

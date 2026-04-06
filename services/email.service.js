@@ -8,8 +8,8 @@ const logger = require('../logger');
 class EmailService {
     constructor() {
         // In production, these would come from environment variables
-        this.fromEmail = 'noreply@fastfood.com';
-        this.fromName = 'FastFood Delivery';
+        this.fromEmail = 'noreply@cravedash.app';
+        this.fromName = 'CraveDash Delivery';
     }
 
     formatKsh(amount) {
@@ -119,12 +119,12 @@ class EmailService {
             </head>
             <body>
                 <div class="header">
-                    <h1>🍔 FastFood</h1>
+                    <h1>🍔 CraveDash</h1>
                 </div>
                 <div class="content">
                     <h2>Password Reset Request</h2>
                     <p>Hello,</p>
-                    <p>We received a request to reset your password for your FastFood account. Click the button below to create a new password:</p>
+                    <p>We received a request to reset your password for your CraveDash account. Click the button below to create a new password:</p>
                     
                     <div style="text-align: center;">
                         <a href="${resetUrl}" class="button">Reset Password</a>
@@ -139,17 +139,17 @@ class EmailService {
                     
                     <p>If you didn't request a password reset, please ignore this email or contact support if you have concerns.</p>
                     
-                    <p>Best regards,<br>The FastFood Team</p>
+                    <p>Best regards,<br>The CraveDash Team</p>
                 </div>
                 <div class="footer">
-                    <p>&copy; ${new Date().getFullYear()} FastFood. All rights reserved.</p>
+                    <p>&copy; ${new Date().getFullYear()} CraveDash. All rights reserved.</p>
                     <p>This is an automated message, please do not reply to this email.</p>
                 </div>
             </body>
             </html>
         `;
 
-        return this.sendEmail(to, 'Password Reset Request - FastFood', html);
+        return this.sendEmail(to, 'Password Reset Request - CraveDash', html);
     }
 
     /**
@@ -240,7 +240,7 @@ class EmailService {
             </head>
             <body>
                 <div class="header">
-                    <h1>🍔 FastFood</h1>
+                    <h1>🍔 CraveDash</h1>
                 </div>
                 <div class="content">
                     <h2>Order Confirmation</h2>
@@ -280,17 +280,17 @@ class EmailService {
                     
                     <p>You can track your order status in your dashboard.</p>
                     
-                    <p>Best regards,<br>The FastFood Team</p>
+                    <p>Best regards,<br>The CraveDash Team</p>
                 </div>
                 <div class="footer">
-                    <p>&copy; ${new Date().getFullYear()} FastFood. All rights reserved.</p>
+                    <p>&copy; ${new Date().getFullYear()} CraveDash. All rights reserved.</p>
                     <p>Hungry? We're always here for you!</p>
                 </div>
             </body>
             </html>
         `;
 
-        return this.sendEmail(to, `Order Confirmation #${order.id} - FastFood`, html);
+        return this.sendEmail(to, `Order Confirmation #${order.id} - CraveDash`, html);
     }
 
     /**
@@ -346,7 +346,7 @@ class EmailService {
             </head>
             <body>
                 <div class="header">
-                    <h1>🍔 FastFood Delivery</h1>
+                    <h1>🍔 CraveDash Delivery</h1>
                 </div>
                 <div class="content">
                     <h2>New Delivery Assignment</h2>
@@ -373,7 +373,7 @@ class EmailService {
                     
                     <p>Please check your dashboard for more details and to update the delivery status.</p>
                     
-                    <p>Safe travels!<br>The FastFood Team</p>
+                    <p>Safe travels!<br>The CraveDash Team</p>
                 </div>
             </body>
             </html>
@@ -441,7 +441,7 @@ class EmailService {
             </head>
             <body>
                 <div class="header">
-                    <h1>🍔 FastFood</h1>
+                    <h1>🍔 CraveDash</h1>
                 </div>
                 <div class="content">
                     <h2>Order Status Update</h2>
@@ -459,7 +459,7 @@ class EmailService {
                     
                     <p>You can track your order in real-time on your dashboard.</p>
                     
-                    <p>Thank you for choosing FastFood!</p>
+                    <p>Thank you for choosing CraveDash!</p>
                 </div>
             </body>
             </html>

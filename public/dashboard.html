@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - FastFood</title>
-    <meta name="description" content="FastFood Dashboard - Manage your orders and account">
-    <meta name="author" content="FastFood Kenya">
+    <title>Dashboard - CraveDash</title>
+    <meta name="description" content="CraveDash Dashboard - Manage your orders and account">
+    <meta name="author" content="CraveDash Kenya">
     <meta name="theme-color" content="#ff6b35">
     <meta name="robots" content="noindex, nofollow">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://fastfood-app.com/dashboard">
-    <meta property="og:title" content="Dashboard - FastFood">
-    <meta property="og:description" content="FastFood Dashboard - Manage your orders and account">
-    <meta property="og:image" content="https://fastfood-app.com/images/og-dashboard.jpg">
-    <meta property="og:site_name" content="FastFood Kenya">
+    <meta property="og:url" content="https://cravedash.app/dashboard">
+    <meta property="og:title" content="Dashboard - CraveDash">
+    <meta property="og:description" content="CraveDash Dashboard - Manage your orders and account">
+    <meta property="og:image" content="https://cravedash.app/images/og-dashboard.jpg">
+    <meta property="og:site_name" content="CraveDash Kenya">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:url" content="https://fastfood-app.com/dashboard">
-    <meta name="twitter:title" content="Dashboard - FastFood">
-    <meta name="twitter:description" content="FastFood Dashboard - Manage your orders and account">
-    <meta name="twitter:image" content="https://fastfood-app.com/images/og-dashboard.jpg">
+    <meta name="twitter:url" content="https://cravedash.app/dashboard">
+    <meta name="twitter:title" content="Dashboard - CraveDash">
+    <meta name="twitter:description" content="CraveDash Dashboard - Manage your orders and account">
+    <meta name="twitter:image" content="https://cravedash.app/images/og-dashboard.jpg">
     
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
@@ -65,6 +65,97 @@
 
         <!-- Admin View -->
         <div id="adminView" class="role-view" style="display: none;">
+            <section class="dashboard-card admin-sales-overview">
+                <div class="admin-sales-overview__header">
+                    <div>
+                        <span class="admin-sales-overview__eyebrow">Sales Command Center</span>
+                        <h3>Revenue and trading snapshot</h3>
+                        <p id="adminSalesNarrative" class="admin-sales-overview__summary">
+                            Loading the latest sales performance, order flow, and trading signals.
+                        </p>
+                    </div>
+                    <a href="/admin/analytics" class="btn btn-secondary admin-sales-overview__link" data-tooltip="Open the full analytics workspace">
+                        Open full analytics
+                    </a>
+                </div>
+
+                <div class="admin-sales-kpi-grid">
+                    <article class="admin-sales-kpi">
+                        <small>Today's revenue</small>
+                        <strong id="adminSalesToday">--</strong>
+                        <span>Live sales closed today</span>
+                    </article>
+                    <article class="admin-sales-kpi">
+                        <small>This week's revenue</small>
+                        <strong id="adminSalesWeek">--</strong>
+                        <span>Current week performance</span>
+                    </article>
+                    <article class="admin-sales-kpi">
+                        <small>This month's revenue</small>
+                        <strong id="adminSalesMonth">--</strong>
+                        <span>Primary operating range</span>
+                    </article>
+                    <article class="admin-sales-kpi">
+                        <small>All-time revenue</small>
+                        <strong id="adminSalesAllTime">--</strong>
+                        <span>Cumulative sales booked</span>
+                    </article>
+                    <article class="admin-sales-kpi">
+                        <small>Average order value</small>
+                        <strong id="adminAverageOrderValue">--</strong>
+                        <span>Average customer basket</span>
+                    </article>
+                    <article class="admin-sales-kpi">
+                        <small>Pending queue</small>
+                        <strong id="adminPendingOrders">--</strong>
+                        <span>Orders awaiting action</span>
+                    </article>
+                </div>
+
+                <div class="admin-sales-detail-grid">
+                    <article class="admin-sales-detail">
+                        <small>Orders completed today</small>
+                        <strong id="adminCompletedToday">--</strong>
+                        <p>Completed order throughput across the day.</p>
+                    </article>
+                    <article class="admin-sales-detail">
+                        <small>Monthly order volume</small>
+                        <strong id="adminMonthlyOrderVolume">--</strong>
+                        <p>Orders counted inside the current monthly reporting range.</p>
+                    </article>
+                    <article class="admin-sales-detail">
+                        <small>Revenue growth</small>
+                        <strong id="adminRevenueGrowth">--</strong>
+                        <p>Change versus the previous equivalent period.</p>
+                    </article>
+                    <article class="admin-sales-detail">
+                        <small>Net profit in range</small>
+                        <strong id="adminNetProfit">--</strong>
+                        <p>Range revenue less tracked expenses.</p>
+                    </article>
+                    <article class="admin-sales-detail">
+                        <small>Top product this period</small>
+                        <strong id="adminTopProduct">--</strong>
+                        <p id="adminTopProductMeta">Waiting for product performance data.</p>
+                    </article>
+                    <article class="admin-sales-detail">
+                        <small>Strongest sales day</small>
+                        <strong id="adminBestDay">--</strong>
+                        <p id="adminBestDayMeta">Waiting for day-level performance data.</p>
+                    </article>
+                    <article class="admin-sales-detail">
+                        <small>Peak ordering hour</small>
+                        <strong id="adminPeakHour">--</strong>
+                        <p id="adminPeakHourMeta">Waiting for intraday trend data.</p>
+                    </article>
+                    <article class="admin-sales-detail">
+                        <small>Next-period forecast</small>
+                        <strong id="adminForecastRevenue">--</strong>
+                        <p>Projected revenue based on the current trend line.</p>
+                    </article>
+                </div>
+            </section>
+
             <div class="dashboard-card">
                 <h3>🧭 Admin Control Center</h3>
                 <div class="product-grid">
@@ -202,4 +293,3 @@
     </script>
 </body>
 </html>
-

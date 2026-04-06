@@ -39,7 +39,7 @@ router.get('/', restrictTo('admin', 'manager'), ordersController.getAllOrders);
 router.get('/cancelled', restrictTo('admin', 'manager'), orderCancellationController.getCancelledOrders);
 router.get('/cancellations', restrictTo('admin', 'manager'), orderCancellationController.getCancellationRequests);
 router.get('/delivery-personnel', restrictTo('admin', 'manager'), ordersController.getDeliveryPersonnel);
-router.get('/analytics', restrictTo('admin'), ordersController.getAnalytics);
+router.get('/analytics', restrictTo('admin', 'manager'), ordersController.getAnalytics);
 router.get('/analytics/export', restrictTo('admin'), ordersController.exportAnalyticsCsv);
 router.post('/:id/override-cancel', restrictTo('admin'), adminOverrideCancelValidator, validate, orderCancellationController.adminOverrideCancel);
 router.patch('/refunds/:id/review', restrictTo('admin'), refundReviewValidator, validate, orderCancellationController.reviewRefundRequest);

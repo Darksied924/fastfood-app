@@ -1,10 +1,99 @@
 let currentCustomer = null;
 let customerOrdersCache = {};
-const CANCELLATION_WINDOW_MS = 10 * 60 * 1000;
+let cancellationUiInterval = null;
+const CANCELLATION_WINDOW_MS = 5 * 60 * 1000;
 const formatKsh = (amount) => `KSh ${Number(amount || 0).toLocaleString('en-KE', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
 })}`;
+
+const formatDateTime = (value) => {
+    if (!value) return 'Not available';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString('en-KE', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+};
+
+function getPaymentState(order) {
+    if (!order || order.status !== 'pending' || !order.payment_in_progress || !order.payment_expires_at) {
+        return { active: false, label: '' };
+    }
+
+    const expiresAt = new Date(order.payment_expires_at);
+    const timeLeftMs = expiresAt.getTime() - Date.now();
+
+    if (Number.isNaN(expiresAt.getTime()) || timeLeftMs <= 0) {
+        return { active: false, label: '' };
+    }
+
+    const minutes = Math.floor(timeLeftMs / 60000);
+    const seconds = Math.floor((timeLeftMs % 60000) / 1000);
+
+    return {
+        active: true,
+        label: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    };
+}
+
+function getCancellationReviewMeta(order) {
+    const refundStatus = String(order?.refund_status || '').toUpperCase();
+
+    if (order?.status !== 'cancelled') {
+        return null;
+    }
+
+    if (refundStatus === 'REQUESTED') {
+        return {
+            badgeClass: 'status-cancelled_review',
+            badgeLabel: 'cancelled - under review',
+            bannerClass: 'cancellation-review-banner cancellation-review-banner--requested',
+            pillClass: 'cancellation-review-banner__pill cancellation-review-banner__pill--requested',
+            pillLabel: 'Under review',
+            summary: 'Your order was cancelled successfully and the refund review is now in progress.',
+            actionLabel: 'View details'
+        };
+    }
+
+    if (refundStatus === 'APPROVED') {
+        return {
+            badgeClass: 'status-cancelled_approved',
+            badgeLabel: 'cancelled - approved',
+            bannerClass: 'cancellation-review-banner cancellation-review-banner--approved',
+            pillClass: 'cancellation-review-banner__pill cancellation-review-banner__pill--approved',
+            pillLabel: 'Approved',
+            summary: 'Your order remains cancelled and the refund review has been approved.',
+            actionLabel: 'View details'
+        };
+    }
+
+    if (refundStatus === 'DENIED') {
+        return {
+            badgeClass: 'status-cancelled_denied',
+            badgeLabel: 'cancelled - denied',
+            bannerClass: 'cancellation-review-banner cancellation-review-banner--denied',
+            pillClass: 'cancellation-review-banner__pill cancellation-review-banner__pill--denied',
+            pillLabel: 'Denied',
+            summary: 'Your order remains cancelled, but the refund review was not approved.',
+            actionLabel: 'View details'
+        };
+    }
+
+    return {
+        badgeClass: 'status-cancelled',
+        badgeLabel: 'cancelled',
+        bannerClass: 'cancellation-review-banner',
+        pillClass: 'cancellation-review-banner__pill',
+        pillLabel: 'Cancelled',
+        summary: 'This order has been cancelled.',
+        actionLabel: 'View details'
+    };
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     if (!auth.requireAuth()) return;
@@ -97,15 +186,34 @@ function bindCancellationForm() {
     const cancelOrderForm = document.getElementById('cancelOrderForm');
     if (!cancelOrderForm) return;
 
+    const agreement = document.getElementById('cancelAgreement');
+    if (agreement) {
+        agreement.addEventListener('change', () => {
+            updateCancellationPageState();
+        });
+    }
+
     cancelOrderForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const orderId = Number(document.getElementById('cancelOrderId').value);
         const reason = String(document.getElementById('cancelReason').value || '').trim();
         const submitButton = cancelOrderForm.querySelector('button[type="submit"]');
+        const order = customerOrdersCache[orderId];
 
         if (!orderId || !reason) {
             cart.showNotification('Please provide a cancellation reason.');
+            return;
+        }
+
+        if (agreement && !agreement.checked) {
+            cart.showNotification('Please confirm that you agree to the cancellation terms.');
+            return;
+        }
+
+        if (!getCancellationState(order).eligible) {
+            cart.showNotification('This order is no longer eligible for cancellation.');
+            updateCancellationPageState();
             return;
         }
 
@@ -114,21 +222,20 @@ function bindCancellationForm() {
             submitButton.textContent = 'Submitting...';
 
             const response = await api.cancelOrder(orderId, reason);
-            closeModal('cancelModal');
             cancelOrderForm.reset();
             cart.showNotification(response.message || 'Order cancelled successfully.');
-            await loadCustomerOrders();
+            window.location.href = '/customer/orders';
         } catch (error) {
             cart.showNotification(error.message || 'Failed to cancel order.');
         } finally {
             submitButton.disabled = false;
-            submitButton.textContent = 'Submit Cancellation';
+            submitButton.textContent = 'Confirm cancellation';
         }
     });
 }
 
 function getCancellationState(order) {
-    if (!order || !['pending', 'paid'].includes(order.status)) {
+    if (!order || order.status !== 'paid') {
         return { eligible: false, timeLeftMs: 0, label: '' };
     }
 
@@ -162,23 +269,103 @@ function openCancelModal(orderId) {
         cart.showNotification('This order is no longer eligible for cancellation.');
         return;
     }
+    window.location.href = `/customer/cancel-order?orderId=${orderId}`;
+}
 
-    const orderIdInput = document.getElementById('cancelOrderId');
-    const reasonInput = document.getElementById('cancelReason');
-    const modal = document.getElementById('cancelModal');
-
-    if (!orderIdInput || !reasonInput || !modal) {
-        cart.showNotification('Cancellation dialog is not available on this page.');
+function openCancellationReviewModal(orderId) {
+    const order = customerOrdersCache[orderId];
+    if (!order) {
+        cart.showNotification('Unable to load this cancellation review.');
         return;
     }
 
-    orderIdInput.value = String(orderId);
-    reasonInput.value = '';
+    const reviewMeta = getCancellationReviewMeta(order);
+    if (!reviewMeta) {
+        cart.showNotification('There is no cancellation review update for this order.');
+        return;
+    }
+
+    const modal = document.getElementById('cancellationReviewModal');
+    if (!modal) {
+        cart.showNotification('Review dialog is not available on this page.');
+        return;
+    }
+
+    const refundStatus = String(order.refund_status || '').toUpperCase();
+    const note = String(order.refund_admin_notes || '').trim() || (
+        refundStatus === 'REQUESTED'
+            ? 'Your cancellation is still being reviewed. No admin note has been added yet.'
+            : refundStatus === 'APPROVED'
+                ? 'The refund review was approved without an additional admin note.'
+                : 'No explanation was added to this denial.'
+    );
+    const reason = String(order.cancellation_reason || '').trim() || 'No cancellation reason was submitted.';
+    const summary = refundStatus === 'REQUESTED'
+        ? `Order #${order.id} has been cancelled and the refund review is still in progress.`
+        : refundStatus === 'APPROVED'
+            ? `Order #${order.id} remains cancelled and the refund review was approved.`
+            : `Order #${order.id} remains cancelled, but the refund review was denied.`;
+    const statusText = refundStatus === 'REQUESTED'
+        ? `Refund review is currently under review${order.cancelled_at ? ` since ${formatDateTime(order.cancelled_at)}` : ''}.`
+        : `Refund review ${refundStatus.toLowerCase()}${order.refund_processed_at ? ` on ${formatDateTime(order.refund_processed_at)}` : ''}.`;
+    const title = refundStatus === 'REQUESTED'
+        ? 'Refund request under review'
+        : refundStatus === 'APPROVED'
+            ? 'Refund request approved'
+            : 'Refund request not approved';
+    const outcomeLabel = refundStatus === 'REQUESTED'
+        ? 'Current status'
+        : refundStatus === 'APPROVED'
+            ? 'Approved outcome'
+            : 'Review outcome';
+    const outcomeText = refundStatus === 'REQUESTED'
+        ? 'Your cancellation has been recorded and is currently waiting for final refund review.'
+        : refundStatus === 'APPROVED'
+            ? 'Your refund request has been approved. The order stays cancelled and the approved review is now on record.'
+            : 'Your cancellation remains on record, but the refund request itself was not approved.';
+    const heroIcon = refundStatus === 'REQUESTED'
+        ? '…'
+        : refundStatus === 'APPROVED'
+            ? '✓'
+            : '!';
+
+    const setText = (id, value) => {
+        const node = document.getElementById(id);
+        if (node) {
+            node.textContent = value;
+        }
+    };
+
+    const pill = document.querySelector('.review-decision-pill');
+    const modalContent = document.querySelector('#cancellationReviewModal .review-decision-modal');
+    if (pill) {
+        pill.textContent = `${reviewMeta.pillLabel} review`;
+        pill.className = `review-decision-pill review-decision-pill--${String(refundStatus || 'cancelled').toLowerCase()}`;
+    }
+    if (modalContent) {
+        modalContent.className = `modal-content review-decision-modal review-decision-modal--${String(refundStatus || 'cancelled').toLowerCase()}`;
+    }
+
+    setText('reviewDecisionTitle', title);
+    setText('reviewDecisionSummary', summary);
+    setText('reviewDecisionOutcomeLabel', outcomeLabel);
+    setText('reviewDecisionOutcomeText', outcomeText);
+    setText('reviewDecisionOrderId', `#${order.id}`);
+    setText('reviewDecisionStatusText', statusText);
+    setText('reviewDecisionProcessedAt', formatDateTime(order.refund_processed_at || order.cancelled_at));
+    setText('reviewDecisionNote', note);
+    setText('reviewDecisionReason', reason);
+    setText('reviewDecisionHeroIcon', heroIcon);
+
     modal.style.display = 'block';
-    reasonInput.focus();
 }
 
 async function loadCustomerPageContent() {
+    if (document.getElementById('cancelTermsPage')) {
+        await loadCancellationPage();
+        return;
+    }
+
     if (document.getElementById('customer-products')) {
         await loadCustomerProducts();
     }
@@ -190,6 +377,22 @@ async function loadCustomerPageContent() {
     if (document.getElementById('customer-orders')) {
         await loadCustomerOrders();
     }
+}
+
+function updateOrderCancellationButtons() {
+    document.querySelectorAll('[data-cancel-button]').forEach((button) => {
+        const expiresAt = Number(button.dataset.expiresAt || 0);
+        if (!expiresAt || Date.now() < expiresAt) {
+            return;
+        }
+
+        const actions = button.closest('.order-actions');
+        button.remove();
+
+        if (actions && actions.querySelectorAll('button').length === 0) {
+            actions.remove();
+        }
+    });
 }
 
 async function loadCustomerProducts() {
@@ -233,16 +436,26 @@ async function loadCustomerOrders() {
                 <div class="order-header">
                     <span>
                         Order #${order.id}
-                        ${getCancellationState(order).eligible ? '<span class="cancel-eligible-badge">Can Cancel</span>' : ''}
                     </span>
-                    <span class="status-badge status-${order.status}">${order.status}</span>
+                    <span class="status-badge ${getPaymentState(order).active ? 'status-awaiting_payment' : (getCancellationReviewMeta(order)?.badgeClass || `status-${order.status}`)}">${getPaymentState(order).active ? 'awaiting payment' : (getCancellationReviewMeta(order)?.badgeLabel || order.status)}</span>
                 </div>
                 <div class="order-details">
                     <p>Total: ${formatKsh(order.total)}</p>
                     <p>Date: ${new Date(order.created_at).toLocaleString()}</p>
                     ${order.delivery_name ? `<p>Delivery: ${order.delivery_name}</p>` : ''}
-                    ${getCancellationState(order).eligible ? `<p class="cancel-time">Cancellation window ends in <span class="countdown">${getCancellationState(order).label}</span></p>` : ''}
+                    ${getPaymentState(order).active ? `<p class="payment-time">Complete M-Pesa on your phone within <span class="countdown">${getPaymentState(order).label}</span></p>` : ''}
                 </div>
+                ${getCancellationReviewMeta(order) ? `
+                    <div class="${getCancellationReviewMeta(order).bannerClass}">
+                        <div>
+                            <span class="${getCancellationReviewMeta(order).pillClass}">${getCancellationReviewMeta(order).pillLabel}</span>
+                            <p>${getCancellationReviewMeta(order).summary}</p>
+                        </div>
+                        <button class="btn btn-secondary cancellation-review-banner__action" onclick="viewCancellationReviewNote(${order.id})">
+                            ${getCancellationReviewMeta(order).actionLabel}
+                        </button>
+                    </div>
+                ` : ''}
                 <div class="order-items">
                     ${order.items.map(item => `
                         <div class="order-item">
@@ -261,16 +474,149 @@ async function loadCustomerOrders() {
                         </button>
                     ` : ''}
                     ${getCancellationState(order).eligible ? `
-                        <button class="btn btn-danger" onclick="requestOrderCancellation(${order.id})">
+                        <button
+                            class="btn btn-danger"
+                            data-cancel-button
+                            data-order-id="${order.id}"
+                            data-expires-at="${new Date(order.created_at).getTime() + CANCELLATION_WINDOW_MS}"
+                            onclick="requestOrderCancellation(${order.id})">
                             Cancel Order
                         </button>
                     ` : ''}
                 </div>
             </div>
         `).join('');
+
+        startCancellationUiTicker();
+        updateOrderCancellationButtons();
     } catch (error) {
         console.error('Failed to load orders:', error);
     }
+}
+
+async function loadCancellationPage() {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = Number(params.get('orderId'));
+
+    if (!orderId) {
+        renderCancellationPageUnavailable('We could not find the order you want to cancel.');
+        return;
+    }
+
+    try {
+        const response = await api.getMyOrders();
+        const orders = response.data;
+        customerOrdersCache = orders.reduce((acc, order) => {
+            acc[order.id] = order;
+            return acc;
+        }, {});
+
+        const order = customerOrdersCache[orderId];
+        if (!order) {
+            renderCancellationPageUnavailable('That order could not be found in your account.');
+            return;
+        }
+
+        document.getElementById('cancelOrderId').value = String(order.id);
+        document.getElementById('cancelOrderReference').textContent = `#${order.id}`;
+        document.getElementById('cancelOrderTotal').textContent = formatKsh(order.total);
+        document.getElementById('cancelOrderDate').textContent = formatDateTime(order.created_at);
+        document.getElementById('cancelOrderStatus').textContent = order.status;
+        document.getElementById('cancelAgreement').checked = false;
+
+        startCancellationUiTicker();
+        updateCancellationPageState();
+    } catch (error) {
+        console.error('Failed to load cancellation page:', error);
+        renderCancellationPageUnavailable('We were unable to load the cancellation details for this order.');
+    }
+}
+
+function renderCancellationPageUnavailable(message) {
+    const state = document.getElementById('cancelEligibilityState');
+    const countdown = document.getElementById('cancelWindowCountdown');
+    const form = document.getElementById('cancelOrderForm');
+    const agreement = document.getElementById('cancelAgreement');
+
+    if (state) {
+        state.textContent = message;
+        state.className = 'cancel-page-status cancel-page-status--error';
+    }
+
+    if (countdown) {
+        countdown.textContent = 'Not available';
+    }
+
+    if (agreement) {
+        agreement.disabled = true;
+    }
+
+    if (form) {
+        form.querySelectorAll('textarea, input, button').forEach((element) => {
+            if (element.id !== 'cancelOrderId') {
+                element.disabled = true;
+            }
+        });
+    }
+}
+
+function updateCancellationPageState() {
+    const orderId = Number(document.getElementById('cancelOrderId')?.value || 0);
+    if (!orderId) return;
+
+    const order = customerOrdersCache[orderId];
+    const state = getCancellationState(order);
+    const countdown = document.getElementById('cancelWindowCountdown');
+    const status = document.getElementById('cancelEligibilityState');
+    const submitButton = document.querySelector('#cancelOrderForm button[type="submit"]');
+    const agreement = document.getElementById('cancelAgreement');
+    const reasonInput = document.getElementById('cancelReason');
+
+    if (!countdown || !status || !submitButton || !agreement || !reasonInput) {
+        return;
+    }
+
+    if (!order) {
+        renderCancellationPageUnavailable('We could not find that order.');
+        return;
+    }
+
+    if (state.eligible) {
+        countdown.textContent = state.label;
+        status.textContent = 'This order can still be cancelled if you accept the terms below.';
+        status.className = 'cancel-page-status cancel-page-status--active';
+        submitButton.disabled = !agreement.checked;
+        agreement.disabled = false;
+        reasonInput.disabled = false;
+        return;
+    }
+
+    countdown.textContent = '00:00';
+    status.textContent = 'The cancellation window has closed for this order.';
+    status.className = 'cancel-page-status cancel-page-status--expired';
+    submitButton.disabled = true;
+    agreement.disabled = true;
+    reasonInput.disabled = true;
+}
+
+function startCancellationUiTicker() {
+    if (cancellationUiInterval) {
+        clearInterval(cancellationUiInterval);
+    }
+
+    if (!document.getElementById('customer-orders') && !document.getElementById('cancelTermsPage')) {
+        return;
+    }
+
+    cancellationUiInterval = setInterval(() => {
+        if (document.getElementById('customer-orders')) {
+            updateOrderCancellationButtons();
+        }
+
+        if (document.getElementById('cancelTermsPage')) {
+            updateCancellationPageState();
+        }
+    }, 1000);
 }
 
 function startOrderEdit(orderId) {
@@ -290,19 +636,18 @@ function startOrderEdit(orderId) {
 
 window.startOrderEdit = startOrderEdit;
 
-function showPaymentModal(orderId, amount) {
-    const modal = document.getElementById('paymentModal');
-    const orderIdInput = document.getElementById('orderId');
-    const paymentAmount = document.getElementById('paymentAmount');
+function showPaymentModal(orderId, amount, phone = '') {
+    const order = customerOrdersCache[orderId];
+    const orderPhone = String(phone || order?.phone || '').trim();
 
-    if (!modal || !orderIdInput || !paymentAmount) {
-        alert('Payment dialog is not available on this page.');
-        return;
-    }
+    sessionStorage.setItem('resumePaymentOrder', JSON.stringify({
+        orderId,
+        amount,
+        phone: orderPhone
+    }));
 
-    orderIdInput.value = orderId;
-    paymentAmount.textContent = formatKsh(amount);
-    modal.style.display = 'block';
+    cart.showNotification(`Continuing payment for order #${orderId}.`);
+    window.location.href = '/customer/cart';
 }
 
 function closeModal(modalId) {
@@ -317,13 +662,84 @@ function checkout() {
 }
 
 function clearCart() {
+    if (cart.getItemCount() === 0) {
+        cart.showNotification('Your cart is already empty.');
+        return;
+    }
+
+    const modal = document.getElementById('clearCartModal');
+    if (modal) {
+        modal.style.display = 'block';
+        return;
+    }
+
     if (confirm('Clear all items from cart?')) {
         cart.clearCart();
+        cart.showNotification('Cart cleared.');
     }
 }
+
+function confirmClearCart() {
+    cart.clearCart();
+    closeModal('clearCartModal');
+    cart.showNotification('Cart cleared.');
+}
+
+function openResumePaymentFromSession() {
+    const resumePaymentRaw = sessionStorage.getItem('resumePaymentOrder');
+    if (!resumePaymentRaw || !document.getElementById('paymentModal')) {
+        return;
+    }
+
+    try {
+        const resumePayment = JSON.parse(resumePaymentRaw);
+        const orderId = Number(resumePayment.orderId);
+        const amount = Number(resumePayment.amount);
+
+        if (!orderId) {
+            sessionStorage.removeItem('resumePaymentOrder');
+            return;
+        }
+
+        const modal = document.getElementById('paymentModal');
+        const orderIdInput = document.getElementById('orderId');
+        const paymentAmount = document.getElementById('paymentAmount');
+        const phoneInput = document.getElementById('phone');
+        const statusDiv = document.getElementById('paymentStatus');
+
+        if (!modal || !orderIdInput || !paymentAmount) {
+            return;
+        }
+
+        orderIdInput.value = String(orderId);
+        paymentAmount.textContent = formatKsh(amount);
+
+        if (phoneInput) {
+            phoneInput.value = String(resumePayment.phone || '');
+        }
+
+        if (statusDiv) {
+            statusDiv.style.display = 'none';
+            statusDiv.innerHTML = '';
+        }
+
+        modal.style.display = 'block';
+        sessionStorage.removeItem('resumePaymentOrder');
+    } catch (error) {
+        console.error('Failed to restore payment flow:', error);
+        sessionStorage.removeItem('resumePaymentOrder');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    openResumePaymentFromSession();
+});
 
 // Expose functions globally
 window.checkout = checkout;
 window.clearCart = clearCart;
+window.confirmClearCart = confirmClearCart;
 window.closeModal = closeModal;
 window.requestOrderCancellation = openCancelModal;
+window.viewCancellationReviewNote = openCancellationReviewModal;
+window.showPaymentModal = showPaymentModal;

@@ -8,6 +8,122 @@ const asyncHandler = require('../utils/asyncHandler');
 const { generateToken } = require('../utils/token.util');
 const { successResponse, errorResponse } = require('../utils/response.util');
 
+const createSocialAuthError = (message, statusCode) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+};
+
+const getOrCreateSocialUser = async ({ email, name, provider }) => {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+
+  let users = await db.query(
+    'SELECT * FROM users WHERE email = ?',
+    [normalizedEmail]
+  );
+
+  let user = users[0];
+
+  if (!user) {
+    const generatedPassword = crypto.randomBytes(32).toString('hex');
+    const hashedPassword = await bcrypt.hash(generatedPassword, config.bcryptRounds);
+    const fallbackName = normalizedEmail.split('@')[0] || 'CraveDash User';
+    const safeName = String(name || fallbackName).trim().slice(0, 50) || 'CraveDash User';
+
+    const result = await db.query(
+      'INSERT INTO users (name, email, password, role, phone) VALUES (?, ?, ?, ?, ?)',
+      [safeName, normalizedEmail, hashedPassword, 'customer', null]
+    );
+
+    users = await db.query(
+      'SELECT * FROM users WHERE id = ?',
+      [result.insertId]
+    );
+
+    user = users[0];
+    logger.info(`New user registered with ${provider}: ${normalizedEmail}`);
+  } else {
+    logger.info(`User logged in with ${provider}: ${normalizedEmail}`);
+  }
+
+  return user;
+};
+
+const verifyGoogleCredential = async (credential) => {
+  if (!config.google.enabled || !config.google.clientId) {
+    throw createSocialAuthError('Google Sign-In is not configured', 503);
+  }
+
+  const response = await fetch(
+    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+  );
+
+  if (!response.ok) {
+    throw createSocialAuthError('Invalid Google credential', 401);
+  }
+
+  const payload = await response.json();
+
+  if (payload.aud !== config.google.clientId) {
+    throw createSocialAuthError('Google credential was issued for a different client', 401);
+  }
+
+  if (String(payload.email_verified).toLowerCase() !== 'true') {
+    throw createSocialAuthError('Google account email is not verified', 401);
+  }
+
+  if (!payload.email) {
+    throw createSocialAuthError('Google account did not provide an email address', 400);
+  }
+
+  return payload;
+};
+
+const verifyFacebookAccessToken = async (accessToken) => {
+  if (!config.facebook.enabled || !config.facebook.appId || !config.facebook.appSecret) {
+    throw createSocialAuthError('Facebook Sign-In is not configured', 503);
+  }
+
+  const appAccessToken = `${config.facebook.appId}|${config.facebook.appSecret}`;
+  const debugResponse = await fetch(
+    `https://graph.facebook.com/debug_token?input_token=${encodeURIComponent(accessToken)}&access_token=${encodeURIComponent(appAccessToken)}`
+  );
+
+  if (!debugResponse.ok) {
+    throw createSocialAuthError('Invalid Facebook access token', 401);
+  }
+
+  const debugPayload = await debugResponse.json();
+  const tokenData = debugPayload.data || {};
+
+  if (!tokenData.is_valid) {
+    throw createSocialAuthError('Facebook access token is no longer valid', 401);
+  }
+
+  if (String(tokenData.app_id) !== String(config.facebook.appId)) {
+    throw createSocialAuthError('Facebook access token was issued for a different app', 401);
+  }
+
+  const profileResponse = await fetch(
+    `https://graph.facebook.com/me?fields=id,name,email&access_token=${encodeURIComponent(accessToken)}`
+  );
+
+  if (!profileResponse.ok) {
+    throw createSocialAuthError('Unable to read Facebook account details', 401);
+  }
+
+  const profile = await profileResponse.json();
+
+  if (!profile.email) {
+    throw createSocialAuthError(
+      'Facebook account did not provide an email address. Please allow email access and try again.',
+      400
+    );
+  }
+
+  return profile;
+};
+
 // @desc    Register user
 // @route   POST /api/auth/register
 const register = asyncHandler(async (req, res) => {
@@ -85,6 +201,77 @@ const login = asyncHandler(async (req, res) => {
     role: user.role,
     token
   }, 'Login successful');
+});
+
+// @desc    Get Google auth config
+// @route   GET /api/auth/google/config
+const getGoogleAuthConfig = asyncHandler(async (req, res) => {
+  const enabled = Boolean(config.google.enabled && config.google.clientId);
+
+  successResponse(res, {
+    enabled,
+    clientId: enabled ? config.google.clientId : ''
+  });
+});
+
+// @desc    Get Facebook auth config
+// @route   GET /api/auth/facebook/config
+const getFacebookAuthConfig = asyncHandler(async (req, res) => {
+  const enabled = Boolean(
+    config.facebook.enabled &&
+    config.facebook.appId &&
+    config.facebook.appSecret
+  );
+
+  successResponse(res, {
+    enabled,
+    appId: enabled ? config.facebook.appId : '',
+    apiVersion: config.facebook.apiVersion
+  });
+});
+
+// @desc    Login/register user with Google
+// @route   POST /api/auth/google
+const googleLogin = asyncHandler(async (req, res) => {
+  const { credential } = req.body;
+  const googleUser = await verifyGoogleCredential(credential);
+  const user = await getOrCreateSocialUser({
+    email: googleUser.email,
+    name: googleUser.name || googleUser.given_name,
+    provider: 'Google'
+  });
+
+  const token = generateToken(user.id);
+
+  successResponse(res, {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    token
+  }, 'Google login successful');
+});
+
+// @desc    Login/register user with Facebook
+// @route   POST /api/auth/facebook
+const facebookLogin = asyncHandler(async (req, res) => {
+  const { accessToken } = req.body;
+  const facebookUser = await verifyFacebookAccessToken(accessToken);
+  const user = await getOrCreateSocialUser({
+    email: facebookUser.email,
+    name: facebookUser.name,
+    provider: 'Facebook'
+  });
+
+  const token = generateToken(user.id);
+
+  successResponse(res, {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    token
+  }, 'Facebook login successful');
 });
 
 // @desc    Forgot password
@@ -274,6 +461,10 @@ const updatePassword = asyncHandler(async (req, res) => {
 module.exports = {
   register,
   login,
+  getGoogleAuthConfig,
+  getFacebookAuthConfig,
+  googleLogin,
+  facebookLogin,
   forgotPassword,
   resetPassword,
   getMe,

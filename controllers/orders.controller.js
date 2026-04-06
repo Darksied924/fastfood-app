@@ -3,6 +3,7 @@ const logger = require('../logger');
 const asyncHandler = require('../utils/asyncHandler');
 const { successResponse, errorResponse } = require('../utils/response.util');
 const orderService = require('../services/order.service');
+const config = require('../config');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -86,12 +87,51 @@ const getAllOrders = asyncHandler(async (req, res) => {
 // @route   GET /api/orders/my-orders
 const getMyOrders = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  const paymentWindowMs = config.mpesa.stkPaymentWindowMs;
 
-  // Select only columns that exist in the orders table schema
-  // This query is resilient to missing columns in the database
   const orders = await db.query(
     `SELECT o.id, o.user_id, o.delivery_id, o.total, o.status, o.created_at, o.updated_at,
-            d.name as delivery_name
+            o.phone,
+            o.checkout_request_id,
+            d.name as delivery_name,
+            (
+              SELECT oc.reason
+              FROM order_cancellations oc
+              WHERE oc.order_id = o.id
+              ORDER BY oc.cancelled_at DESC, oc.id DESC
+              LIMIT 1
+            ) AS cancellation_reason,
+            (
+              SELECT oc.cancelled_at
+              FROM order_cancellations oc
+              WHERE oc.order_id = o.id
+              ORDER BY oc.cancelled_at DESC, oc.id DESC
+              LIMIT 1
+            ) AS cancelled_at,
+            (
+              SELECT rr.status
+              FROM refund_requests rr
+              JOIN order_cancellations oc ON rr.cancellation_id = oc.id
+              WHERE oc.order_id = o.id
+              ORDER BY oc.cancelled_at DESC, oc.id DESC
+              LIMIT 1
+            ) AS refund_status,
+            (
+              SELECT rr.admin_notes
+              FROM refund_requests rr
+              JOIN order_cancellations oc ON rr.cancellation_id = oc.id
+              WHERE oc.order_id = o.id
+              ORDER BY oc.cancelled_at DESC, oc.id DESC
+              LIMIT 1
+            ) AS refund_admin_notes,
+            (
+              SELECT rr.processed_at
+              FROM refund_requests rr
+              JOIN order_cancellations oc ON rr.cancellation_id = oc.id
+              WHERE oc.order_id = o.id
+              ORDER BY oc.cancelled_at DESC, oc.id DESC
+              LIMIT 1
+            ) AS refund_processed_at
      FROM orders o
      LEFT JOIN users d ON o.delivery_id = d.id
      WHERE o.user_id = ?
@@ -115,6 +155,24 @@ const getMyOrders = asyncHandler(async (req, res) => {
       logger.error('Error fetching order items:', itemError);
       order.items = [];
     }
+
+    const hasPendingPaymentRequest = order.status === 'pending' && Boolean(order.checkout_request_id);
+    const paymentRequestedAt = hasPendingPaymentRequest && order.updated_at
+      ? new Date(order.updated_at)
+      : null;
+    const paymentExpiresAt = paymentRequestedAt
+      ? new Date(paymentRequestedAt.getTime() + paymentWindowMs)
+      : null;
+    const paymentInProgress = Boolean(
+      paymentRequestedAt &&
+      paymentExpiresAt &&
+      paymentExpiresAt.getTime() > Date.now()
+    );
+
+    order.payment_requested_at = paymentRequestedAt ? paymentRequestedAt.toISOString() : null;
+    order.payment_expires_at = paymentExpiresAt ? paymentExpiresAt.toISOString() : null;
+    order.payment_in_progress = paymentInProgress;
+    order.payment_window_ms = paymentWindowMs;
   }
 
   successResponse(res, orders);
@@ -831,6 +889,9 @@ const getAnalyticsPayload = async (query) => {
         (SELECT COALESCE(SUM(total), 0) FROM orders WHERE status IN (${SALES_STATUSES_SQL}) AND DATE(created_at) = CURDATE()) AS daily_sales,
         (SELECT COALESCE(SUM(total), 0) FROM orders WHERE status IN (${SALES_STATUSES_SQL}) AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)) AS weekly_sales,
         (SELECT COALESCE(SUM(total), 0) FROM orders WHERE status IN (${SALES_STATUSES_SQL}) AND YEAR(created_at) = YEAR(CURDATE()) AND MONTH(created_at) = MONTH(CURDATE())) AS monthly_sales,
+        (SELECT COUNT(*) FROM orders WHERE status IN (${SALES_STATUSES_SQL}) AND DATE(created_at) = CURDATE()) AS today_order_count,
+        (SELECT COUNT(*) FROM orders WHERE status = 'pending') AS pending_orders,
+        (SELECT COUNT(*) FROM orders WHERE status = 'delivered' AND DATE(updated_at) = CURDATE()) AS completed_orders_today,
         (SELECT COUNT(*) FROM orders) AS total_orders_all_time,
         (SELECT COALESCE(AVG(total), 0) FROM orders WHERE status IN (${SALES_STATUSES_SQL})) AS average_order_value,
         (SELECT COALESCE(SUM(total), 0) FROM orders WHERE status IN (${SALES_STATUSES_SQL}) AND created_at BETWEEN ? AND ?) AS range_revenue,
@@ -1209,6 +1270,9 @@ const getAnalyticsPayload = async (query) => {
       dailySales: toNumber(kpiRows[0]?.daily_sales),
       weeklySales: toNumber(kpiRows[0]?.weekly_sales),
       monthlySales: toNumber(kpiRows[0]?.monthly_sales),
+      todayOrderCount: Number(kpiRows[0]?.today_order_count || 0),
+      pendingOrders: Number(kpiRows[0]?.pending_orders || 0),
+      completedOrdersToday: Number(kpiRows[0]?.completed_orders_today || 0),
       totalOrders: Number(kpiRows[0]?.total_orders_all_time || 0),
       averageOrderValue: toNumber(kpiRows[0]?.average_order_value),
       revenueGrowthRate: revenueGrowthRate,

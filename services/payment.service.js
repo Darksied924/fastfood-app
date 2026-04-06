@@ -8,6 +8,18 @@ const mpesaService = require('./mpesa.service');
  * Handles payment processing logic with M-Pesa integration
  */
 class PaymentService {
+    getResultDescription(resultCode, fallback = '') {
+        if (resultCode === 1037) {
+            return 'Action timed out';
+        }
+
+        if (resultCode === 1032) {
+            return 'Action cancelled';
+        }
+
+        return fallback || 'Payment not completed';
+    }
+
     /**
      * Process payment
      * @param {number} orderId - Order ID
@@ -146,7 +158,10 @@ class PaymentService {
             const callbackPayload = callbackData.Body?.stkCallback ?? {};
             const checkoutRequestIdFromCallback = callbackPayload.CheckoutRequestID ?? null;
             const resultCodeFromCallback = callbackPayload.ResultCode ?? result.resultCode ?? result.ResultCode ?? 0;
-            const resultDesc = callbackPayload.ResultDesc ?? result.resultDesc ?? result.ResultDesc ?? (resultCodeFromCallback === 0 ? 'Success' : 'Payment failed');
+            const resultDesc = this.getResultDescription(
+                resultCodeFromCallback,
+                callbackPayload.ResultDesc ?? result.resultDesc ?? result.ResultDesc ?? (resultCodeFromCallback === 0 ? 'Success' : 'Payment not completed')
+            );
             const checkoutRequestId = checkoutRequestIdFromCallback ?? result.checkoutRequestId ?? result.CheckoutRequestID ?? null;
             const parsedResultCode = Number(resultCodeFromCallback);
             const resultCode = Number.isNaN(parsedResultCode) ? 1 : parsedResultCode;
@@ -193,7 +208,8 @@ class PaymentService {
             const resolvedCheckoutId = checkoutRequestId ?? order.checkout_request_id;
             const updateTargetColumn = resolvedCheckoutId ? 'checkout_request_id' : 'id';
             const updateTargetValue = resolvedCheckoutId ?? order.id;
-            const newStatus = resultCode === 0 ? 'paid' : 'failed';
+            const isPaymentSuccess = resultCode === 0;
+            const newStatus = isPaymentSuccess ? 'paid' : 'pending';
 
             if (order.status === 'paid' && resultCode === 0) {
                 logger.warn('Duplicate callback ignored for already paid order', {
@@ -240,11 +256,11 @@ class PaymentService {
                 }
             }
 
-            const updateQuery = resultCode === 0
+            const updateQuery = isPaymentSuccess
                 ? `UPDATE orders SET status = ?, mpesa_receipt = ?, paid_at = NOW() WHERE ${updateTargetColumn} = ?`
-                : `UPDATE orders SET status = ?, mpesa_receipt = NULL, paid_at = NULL WHERE ${updateTargetColumn} = ?`;
+                : `UPDATE orders SET status = ?, mpesa_receipt = NULL, paid_at = NULL, checkout_request_id = NULL WHERE ${updateTargetColumn} = ?`;
 
-            const updateParams = resultCode === 0
+            const updateParams = isPaymentSuccess
                 ? [newStatus, receipt, updateTargetValue]
                 : [newStatus, updateTargetValue];
 
@@ -267,10 +283,10 @@ class PaymentService {
             }
 
             return {
-                ResultCode: resultCode === 0 ? 0 : resultCode || 1,
+                ResultCode: isPaymentSuccess ? 0 : resultCode || 1,
                 ResultDesc: resultDesc,
                 MpesaReceiptNumber: receipt,
-                success: resultCode === 0
+                success: isPaymentSuccess
             };
         } catch (error) {
             logger.error('STK callback handling failed:', error);

@@ -41,6 +41,16 @@ module.exports = {
     secret: process.env.JWT_SECRET || 'your-secret-key',
     expire: process.env.JWT_EXPIRE || '7d'
   },
+  google: {
+    enabled: process.env.GOOGLE_AUTH_ENABLED === 'true',
+    clientId: process.env.GOOGLE_CLIENT_ID || ''
+  },
+  facebook: {
+    enabled: process.env.FACEBOOK_AUTH_ENABLED === 'true',
+    appId: process.env.FACEBOOK_APP_ID || '',
+    appSecret: process.env.FACEBOOK_APP_SECRET || '',
+    apiVersion: process.env.FACEBOOK_API_VERSION || 'v22.0'
+  },
   bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS, 10) || 10,
   rateLimit: {
     apiWindowMs: parseInt(process.env.API_RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
@@ -60,6 +70,7 @@ module.exports = {
     businessShortCode: process.env.MPESA_BUSINESS_SHORT_CODE || '',
     passkey: process.env.MPESA_PASSKEY || '',
     callbackUrl: process.env.MPESA_CALLBACK_URL || '',
-    environment: process.env.MPESA_ENVIRONMENT || 'sandbox'
+    environment: process.env.MPESA_ENVIRONMENT || 'sandbox',
+    stkPaymentWindowMs: parseInt(process.env.MPESA_STK_PAYMENT_WINDOW_MS, 10) || 2 * 60 * 1000
   }
 };

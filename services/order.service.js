@@ -429,7 +429,7 @@ class OrderService {
             <h1>Your Order Has Been Delivered!</h1>
             <p>Dear ${order.customer_name},</p>
             <p>Your order #${order.id} has been delivered.</p>
-            <p>Thank you for choosing FastFood!</p>
+            <p>Thank you for choosing CraveDash!</p>
             <p>We hope you enjoy your meal!</p>
         `;
 

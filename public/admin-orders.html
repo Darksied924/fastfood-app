@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orders - FastFood Admin</title>
+    <title>Orders - CraveDash Admin</title>
     <meta name="description" content="Manage all customer orders - view, update order status, and track deliveries">
-    <meta name="author" content="FastFood Kenya">
+    <meta name="author" content="CraveDash Kenya">
     <meta name="theme-color" content="#ff6b35">
     <meta name="robots" content="noindex, nofollow">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://fastfood-app.com/admin/orders">
-    <meta property="og:title" content="Orders - FastFood Admin">
+    <meta property="og:url" content="https://cravedash.app/admin/orders">
+    <meta property="og:title" content="Orders - CraveDash Admin">
     <meta property="og:description" content="Manage all customer orders - view, update order status, and track deliveries">
-    <meta property="og:image" content="https://fastfood-app.com/images/og-admin-orders.jpg">
-    <meta property="og:site_name" content="FastFood Kenya">
+    <meta property="og:image" content="https://cravedash.app/images/og-admin-orders.jpg">
+    <meta property="og:site_name" content="CraveDash Kenya">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:url" content="https://fastfood-app.com/admin/orders">
-    <meta name="twitter:title" content="Orders - FastFood Admin">
+    <meta name="twitter:url" content="https://cravedash.app/admin/orders">
+    <meta name="twitter:title" content="Orders - CraveDash Admin">
     <meta name="twitter:description" content="Manage all customer orders - view, update order status, and track deliveries">
-    <meta name="twitter:image" content="https://fastfood-app.com/images/og-admin-orders.jpg">
+    <meta name="twitter:image" content="https://cravedash.app/images/og-admin-orders.jpg">
     
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
@@ -32,34 +32,98 @@
 
     <main class="dashboard-container">
         <div class="dashboard-header">
-            <h1>📦 Order Management</h1>
+            <div class="dashboard-header-copy">
+                <p class="dashboard-eyebrow">Operations</p>
+                <h1>📦 Order Management</h1>
+                <p class="dashboard-subtitle">Track live order flow, prioritize cancellations and refunds, and keep approval work visible across every screen size.</p>
+            </div>
             <div class="user-role">ADMIN</div>
         </div>
 
         <div class="dashboard-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
-                <h3 style="margin:0; border-bottom:none; padding:0;">All Orders</h3>
-                <select id="orderStatusFilter" class="form-group" style="max-width:240px; margin:0;" data-tooltip="Filter orders by status">
-                    <option value="">All statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="paid">Paid</option>
-                    <option value="preparing">Preparing</option>
-                    <option value="out_for_delivery">Out for Delivery</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                </select>
+            <div class="orders-card-header orders-card-header--priority">
+                <div class="orders-card-title-group">
+                    <p class="orders-card-kicker">Priority queue</p>
+                    <h3>Cancellation & Refund Review</h3>
+                    <p class="orders-card-subtitle">Pending cancellation approvals and refund decisions are surfaced here first so urgent work is immediately visible.</p>
+                </div>
+                <div class="orders-card-actions">
+                    <button class="btn btn-secondary btn-small" type="button" onclick="refreshCancellationRequests()">Refresh</button>
+                    <button class="btn btn-primary btn-small" type="button" onclick="scrollToOrdersDirectory()">View all orders</button>
+                </div>
             </div>
-            <div id="all-orders-list"></div>
+            <div id="orders-overview" class="orders-overview"></div>
+            <div id="pending-approvals-spotlight" class="pending-approvals-spotlight"></div>
+            <div id="cancellation-requests-list"></div>
         </div>
 
         <div class="dashboard-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
-                <h3 style="margin:0; border-bottom:none; padding:0;">Cancellation & Refund Review</h3>
-                <button class="btn btn-secondary btn-small" type="button" onclick="refreshCancellationRequests()">Refresh</button>
+            <div class="orders-card-header" id="ordersDirectoryCard">
+                <div class="orders-card-title-group">
+                    <p class="orders-card-kicker">Directory</p>
+                    <h3>All Orders</h3>
+                    <p class="orders-card-subtitle">Review the full order pipeline by status, from pending checkout through delivery and cancellations.</p>
+                </div>
+                <div class="orders-card-actions">
+                    <select id="orderStatusFilter" class="form-group" data-tooltip="Filter orders by status">
+                        <option value="">All statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="preparing">Preparing</option>
+                        <option value="out_for_delivery">Out for Delivery</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
             </div>
-            <div id="cancellation-requests-list"></div>
+            <div id="all-orders-list" class="orders-directory"></div>
         </div>
     </main>
+
+    <div id="refundReviewModal" class="modal">
+        <div class="modal-content refund-review-modal">
+            <span class="close" onclick="closeModal('refundReviewModal')" data-tooltip="Close this dialog">&times;</span>
+
+            <div class="refund-review-hero">
+                <span id="refundReviewStatusPill" class="refund-review-pill">Approval review</span>
+                <h3 id="refundReviewTitle">Approve cancellation refund</h3>
+                <p id="refundReviewSummary">Confirm this refund approval after reviewing the cancellation details below.</p>
+            </div>
+
+            <div class="refund-review-grid">
+                <article class="refund-review-card">
+                    <small>Order reference</small>
+                    <strong id="refundReviewOrderId">--</strong>
+                    <p id="refundReviewCancelledAt">--</p>
+                </article>
+                <article class="refund-review-card">
+                    <small>Customer</small>
+                    <strong id="refundReviewCustomer">--</strong>
+                    <p id="refundReviewAmount">--</p>
+                </article>
+            </div>
+
+            <section class="refund-review-panel">
+                <small>Cancellation reason</small>
+                <p id="refundReviewReason">--</p>
+            </section>
+
+            <form id="refundReviewForm" onsubmit="submitRefundReviewFromModal(event)">
+                <input type="hidden" id="refundReviewId">
+                <input type="hidden" id="refundReviewDecision">
+
+                <div class="form-group">
+                    <label id="refundReviewNoteLabel" for="refundReviewNotes">Approval note</label>
+                    <textarea id="refundReviewNotes" rows="4" placeholder="Optional note for the customer or your records..."></textarea>
+                </div>
+
+                <div class="refund-review-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('refundReviewModal')">Back</button>
+                    <button type="submit" id="refundReviewConfirmBtn" class="btn btn-primary">Approve refund</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <footer></footer>
 

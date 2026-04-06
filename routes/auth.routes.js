@@ -7,6 +7,8 @@ const { createRateLimiter, getClientIp } = require('../middleware/rateLimiter');
 const {
   registerValidator,
   loginValidator,
+  googleLoginValidator,
+  facebookLoginValidator,
   forgotPasswordValidator,
   resetPasswordValidator,
   updatePasswordValidator,
@@ -28,6 +30,10 @@ const authRateLimiter = createRateLimiter({
 
 router.post('/register', authRateLimiter, registerValidator, validate, authController.register);
 router.post('/login', authRateLimiter, loginValidator, validate, authController.login);
+router.get('/google/config', authController.getGoogleAuthConfig);
+router.post('/google', authRateLimiter, googleLoginValidator, validate, authController.googleLogin);
+router.get('/facebook/config', authController.getFacebookAuthConfig);
+router.post('/facebook', authRateLimiter, facebookLoginValidator, validate, authController.facebookLogin);
 router.post('/forgot-password', authRateLimiter, forgotPasswordValidator, validate, authController.forgotPassword);
 router.post('/reset-password/:token', authRateLimiter, resetPasswordValidator, validate, authController.resetPassword);
 router.get('/me', protect, authController.getMe);

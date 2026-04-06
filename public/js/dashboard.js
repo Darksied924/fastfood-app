@@ -8,6 +8,113 @@ const formatKsh = (amount) => `KSh ${Number(amount || 0).toLocaleString('en-KE',
     maximumFractionDigits: 0
 })}`;
 
+const formatPercent = (value) => `${Number(value || 0).toFixed(2)}%`;
+
+const formatDateLabel = (value) => {
+    if (!value) return 'N/A';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString('en-KE', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    });
+};
+
+const formatHourLabel = (hour) => {
+    if (hour === null || hour === undefined || hour === '') return 'N/A';
+    const normalizedHour = Number(hour);
+    if (Number.isNaN(normalizedHour)) return String(hour);
+    const date = new Date();
+    date.setHours(normalizedHour, 0, 0, 0);
+    return date.toLocaleTimeString('en-KE', {
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+};
+
+function setText(id, value) {
+    const node = document.getElementById(id);
+    if (node) {
+        node.textContent = value;
+    }
+}
+
+function renderAdminSalesOverview(analytics) {
+    const kpis = analytics?.kpis || {};
+    const insights = analytics?.insights || {};
+    const expenses = analytics?.expenses || {};
+    const additions = analytics?.highValueAdditions || {};
+
+    setText('adminSalesToday', formatKsh(kpis.dailySales));
+    setText('adminSalesWeek', formatKsh(kpis.weeklySales));
+    setText('adminSalesMonth', formatKsh(kpis.monthlySales));
+    setText('adminSalesAllTime', formatKsh(kpis.totalSalesAllTime));
+    setText('adminAverageOrderValue', formatKsh(kpis.averageOrderValue));
+    setText('adminPendingOrders', Number(kpis.pendingOrders || 0).toLocaleString('en-KE'));
+    setText('adminCompletedToday', Number(kpis.completedOrdersToday || 0).toLocaleString('en-KE'));
+    setText('adminMonthlyOrderVolume', Number(kpis.rangeOrders || 0).toLocaleString('en-KE'));
+    setText('adminRevenueGrowth', formatPercent(kpis.revenueGrowthRate));
+    setText('adminNetProfit', formatKsh(expenses.netProfit));
+    setText('adminForecastRevenue', formatKsh(additions.salesForecasting?.projectedNextPeriodRevenue));
+
+    const topProduct = insights.mostSellingProduct;
+    setText('adminTopProduct', topProduct?.name || 'No standout yet');
+    setText(
+        'adminTopProductMeta',
+        topProduct
+            ? `${topProduct.quantity} units sold, generating ${formatKsh(topProduct.revenue)}.`
+            : 'No qualifying product sales in the current range.'
+    );
+
+    const bestDay = insights.mostSellingDay;
+    setText('adminBestDay', bestDay ? formatDateLabel(bestDay.date) : 'No best day yet');
+    setText(
+        'adminBestDayMeta',
+        bestDay
+            ? `${formatKsh(bestDay.revenue)} booked on the strongest trading day in range.`
+            : 'The selected reporting range has no completed sales days yet.'
+    );
+
+    const peakHour = insights.bestPerformingTimeOfDay;
+    setText('adminPeakHour', peakHour ? formatHourLabel(peakHour.hour) : 'No peak hour yet');
+    setText(
+        'adminPeakHourMeta',
+        peakHour
+            ? `${peakHour.orders} orders worth ${formatKsh(peakHour.revenue)} in the busiest hour.`
+            : 'Peak-hour insight will appear once time-of-day sales data is available.'
+    );
+
+    const narrativeNode = document.getElementById('adminSalesNarrative');
+    if (narrativeNode) {
+        narrativeNode.textContent = `This monthly executive snapshot shows ${formatKsh(kpis.monthlySales)} in month-to-date revenue from ${Number(kpis.rangeOrders || 0).toLocaleString('en-KE')} orders, with ${Number(kpis.pendingOrders || 0).toLocaleString('en-KE')} orders still in the queue and ${formatPercent(kpis.revenueGrowthRate)} growth versus the previous comparable period.`;
+    }
+}
+
+function renderAdminSalesOverviewError() {
+    [
+        'adminSalesToday',
+        'adminSalesWeek',
+        'adminSalesMonth',
+        'adminSalesAllTime',
+        'adminAverageOrderValue',
+        'adminPendingOrders',
+        'adminCompletedToday',
+        'adminMonthlyOrderVolume',
+        'adminRevenueGrowth',
+        'adminNetProfit',
+        'adminTopProduct',
+        'adminBestDay',
+        'adminPeakHour',
+        'adminForecastRevenue'
+    ].forEach((id) => setText(id, 'N/A'));
+
+    setText('adminTopProductMeta', 'Analytics data is currently unavailable.');
+    setText('adminBestDayMeta', 'Analytics data is currently unavailable.');
+    setText('adminPeakHourMeta', 'Analytics data is currently unavailable.');
+    setText('adminSalesNarrative', 'Sales overview is temporarily unavailable, but the admin control center remains fully accessible.');
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Check authentication
     if (!auth.requireAuth()) return;
@@ -143,12 +250,14 @@ async function loadAdminDashboard() {
     }
 
     try {
-        const response = await api.getAnalytics({ preset: 'today' });
+        const response = await api.getAnalytics({ preset: 'month' });
         const analytics = response.data;
+        renderAdminSalesOverview(analytics);
         totalSalesNode.textContent = formatKsh(analytics.kpis.totalSalesAllTime);
         todaySalesNode.textContent = formatKsh(analytics.kpis.dailySales);
     } catch (error) {
         console.error('Failed to load analytics preview:', error);
+        renderAdminSalesOverviewError();
         totalSalesNode.textContent = 'N/A';
         todaySalesNode.textContent = 'N/A';
     }

@@ -5,6 +5,7 @@ const ROLE_LABELS = {
     delivery: 'Delivery',
     customer: 'Customer'
 };
+const STAFF_ROLES = ['admin', 'manager', 'delivery'];
 
 let allUsers = [];
 let selectedUser = null;
@@ -46,22 +47,40 @@ async function loadUsers() {
         const response = await api.getAllUsers();
         allUsers = response.data;
         const container = document.getElementById('users-list');
+        const summaryContainer = document.getElementById('users-summary');
 
         if (!Array.isArray(allUsers) || allUsers.length === 0) {
-            container.innerHTML = '<p>No users found.</p>';
+            if (summaryContainer) {
+                summaryContainer.innerHTML = '';
+            }
+            container.innerHTML = '<div class="empty-users">No users found.</div>';
             return;
         }
 
         const groupedUsers = groupUsersByRole(allUsers);
         const unknownRoles = Object.keys(groupedUsers).filter((role) => !ROLE_ORDER.includes(role));
         const orderedRoles = [...ROLE_ORDER, ...unknownRoles];
+        const totalUsers = allUsers.length;
+
+        if (summaryContainer) {
+            summaryContainer.innerHTML = renderUsersSummary(groupedUsers, totalUsers);
+        }
 
         container.innerHTML = orderedRoles
             .filter((role) => groupedUsers[role] && groupedUsers[role].length > 0)
-            .map((role) => renderRoleSection(role, groupedUsers[role]))
+            .map((role) => renderRoleSection(role, groupedUsers[role], totalUsers))
             .join('');
     } catch (error) {
-        alert(`Failed to load users: ${error.message}`);
+        const container = document.getElementById('users-list');
+        const summaryContainer = document.getElementById('users-summary');
+
+        if (summaryContainer) {
+            summaryContainer.innerHTML = '';
+        }
+        if (container) {
+            container.innerHTML = '<div class="error-message">Failed to load users. Please try again.</div>';
+        }
+        showToast(`Failed to load users: ${error.message}`, 'error');
     }
 }
 
@@ -86,39 +105,119 @@ function formatDate(dateString) {
     });
 }
 
-function renderRoleSection(role, users) {
+function formatDateTime(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+}
+
+function pluralizeRole(role, count) {
+    const label = ROLE_LABELS[role] || role;
+    if (count === 1) {
+        return label;
+    }
+    return role === 'delivery' ? 'Delivery Staff' : `${label}s`;
+}
+
+function getLatestUser(users) {
+    return [...users]
+        .filter((user) => user && user.created_at)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] || null;
+}
+
+function renderUsersSummary(groupedUsers, totalUsers) {
+    const staffCount = allUsers.filter((user) => STAFF_ROLES.includes(user.role)).length;
+    const customerCount = allUsers.filter((user) => user.role === 'customer').length;
+    const newestUser = getLatestUser(allUsers);
+    const adminCount = (groupedUsers.admin || []).length;
+
+    const summaryCards = [
+        {
+            label: 'Total Accounts',
+            value: totalUsers,
+            detail: `${Object.keys(groupedUsers).length} active role groups`,
+            tone: 'primary'
+        },
+        {
+            label: 'Staff Accounts',
+            value: staffCount,
+            detail: `${adminCount} admin${adminCount === 1 ? '' : 's'} included`,
+            tone: 'accent'
+        },
+        {
+            label: 'Customer Accounts',
+            value: customerCount,
+            detail: `${Math.round((customerCount / totalUsers) * 100) || 0}% of all users`,
+            tone: 'success'
+        },
+        {
+            label: 'Latest Registration',
+            value: newestUser ? newestUser.name : 'N/A',
+            detail: newestUser ? formatDateTime(newestUser.created_at) : 'No registrations yet',
+            tone: 'neutral'
+        }
+    ];
+
+    return summaryCards.map((card) => `
+        <article class="users-summary-card users-summary-card--${card.tone}">
+            <span class="users-summary-label">${card.label}</span>
+            <strong class="users-summary-value">${card.value}</strong>
+            <span class="users-summary-detail">${card.detail}</span>
+        </article>
+    `).join('');
+}
+
+function renderRoleSection(role, users, totalUsers) {
     const roleLabel = ROLE_LABELS[role] || role;
+    const roleShare = Math.round((users.length / totalUsers) * 100) || 0;
 
     return `
-        <section class="role-user-section">
+        <section class="role-user-section role-user-section--${role}">
             <div class="role-user-section-header">
-                <h4>${roleLabel}</h4>
+                <div class="role-user-section-copy">
+                    <span class="role-section-kicker">Role group</span>
+                    <h4>${pluralizeRole(role, users.length)}</h4>
+                    <p>${users.length} account${users.length === 1 ? '' : 's'} in this group, representing ${roleShare}% of the directory.</p>
+                </div>
                 <span class="role-count">${users.length}</span>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Date Registered</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${users.map((user) => renderUserRow(user)).join('')}
-                </tbody>
-            </table>
+            <div class="role-user-table-wrap">
+                <table class="role-user-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Date Registered</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map((user) => renderUserRow(user)).join('')}
+                    </tbody>
+                </table>
+            </div>
         </section>
     `;
 }
 
 function renderUserRow(user) {
     return `
-        <tr>
-            <td>${user.id}</td>
-            <td>${user.name}</td>
-            <td>${user.email}</td>
-            <td>${formatDate(user.created_at)}</td>
+        <tr class="role-user-row">
+            <td data-label="ID">#${user.id}</td>
+            <td data-label="Name">
+                <div class="user-row-primary">
+                    <span class="user-row-name">${user.name}</span>
+                    <span class="role-badge role-${user.role}">${ROLE_LABELS[user.role] || user.role}</span>
+                </div>
+            </td>
+            <td data-label="Email"><span class="user-row-email">${user.email}</span></td>
+            <td data-label="Date Registered">${formatDate(user.created_at)}</td>
         </tr>
     `;
 }
@@ -305,4 +404,3 @@ window.updateUserRoleFromModal = updateUserRoleFromModal;
 window.deleteUserFromModal = deleteUserFromModal;
 window.showDeleteConfirmModal = showDeleteConfirmModal;
 window.confirmDeleteUser = confirmDeleteUser;
-

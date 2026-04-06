@@ -14,7 +14,7 @@ const createServiceError = (message, statusCode = 400) => {
  */
 class OrderCancellationService {
   constructor() {
-    this.TEN_MINUTES_MS = 10 * 60 * 1000;
+    this.FIVE_MINUTES_MS = 5 * 60 * 1000;
   }
 
   requiresRefundReview(order) {
@@ -30,7 +30,7 @@ class OrderCancellationService {
   }
 
   /**
-   * Customer cancels order (PENDING/PAID within 10min)
+   * Customer cancels order (paid within 5min)
    * @param {number} orderId - Order ID
    * @param {number} userId - Customer ID
    * @param {string} reason - Cancellation reason
@@ -76,11 +76,11 @@ class OrderCancellationService {
       const createdTime = new Date(order.created_at);
       const timeDiff = now - createdTime;
 
-      const validStatus = ['pending', 'paid'].includes(order.status);
-      const withinTime = timeDiff <= this.TEN_MINUTES_MS;
+      const validStatus = order.status === 'paid';
+      const withinTime = timeDiff <= this.FIVE_MINUTES_MS;
 
       if (!validStatus || !withinTime) {
-        throw createServiceError('Cancellation only allowed for PENDING/PAID orders within 10 minutes', 400);
+        throw createServiceError('Cancellation is only allowed for paid orders within 5 minutes', 400);
       }
 
       // Create cancellation record
@@ -138,7 +138,7 @@ class OrderCancellationService {
   }
 
   /**
-   * Admin overrides cancellation (anytime, any status)
+   * Admin overrides cancellation (except delivered/cancelled/replaced)
    * @param {number} orderId - Order ID
    * @param {number} adminId - Admin ID
    * @param {string} reason - Admin reason/notes
@@ -173,6 +173,10 @@ class OrderCancellationService {
 
       if (order.status === 'replaced') {
         throw createServiceError('Replaced orders cannot be cancelled', 400);
+      }
+
+      if (order.status === 'delivered') {
+        throw createServiceError('Delivered orders cannot be cancelled by admin override', 400);
       }
 
       const cleanReason = String(reason || '').trim();

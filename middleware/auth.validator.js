@@ -59,6 +59,20 @@ const loginValidator = [
     .withMessage('Password is required')
 ];
 
+const googleLoginValidator = [
+  body('credential')
+    .trim()
+    .notEmpty()
+    .withMessage('Google credential is required')
+];
+
+const facebookLoginValidator = [
+  body('accessToken')
+    .trim()
+    .notEmpty()
+    .withMessage('Facebook access token is required')
+];
+
 /**
  * Validation rules for forgot password
  */
@@ -170,6 +184,8 @@ const updateProfileValidator = [
 module.exports = {
   registerValidator,
   loginValidator,
+  googleLoginValidator,
+  facebookLoginValidator,
   forgotPasswordValidator,
   resetPasswordValidator,
   updatePasswordValidator,

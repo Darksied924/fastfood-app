@@ -31,17 +31,18 @@ router.post('/stk-callback', paymentCallbackRateLimiter, stkCallbackValidator, v
 
 // Test endpoint to verify callback is reachable
 router.post('/test-callback', (req, res) => {
-    logger.info('TEST CALLBACK RECEIVED:', JSON.stringify(req.body));
+    logger.info('TEST CALLBACK RECEIVED', {
+      payload: req.body
+    });
     res.status(200).json({ received: true, body: req.body });
 });
 
 // Protected routes - require authentication
 router.post('/stk-push', protect, userPaymentInitRateLimiter, stkPushValidator, validate, paymentsController.initiateSTKPush);
-router.post('/simulate-callback', protect, paymentsController.simulateCallback);
+// router.post('/simulate-callback', protect, paymentsController.simulateCallback);
 router.get('/status/:checkoutRequestId', protect, paymentsController.queryPaymentStatus);
 router.get('/verify/:receiptNumber', protect, paymentsController.verifyPayment);
 router.get('/stats', protect, paymentsController.getPaymentStats);
 router.get('/status', protect, paymentsController.getMpesaStatus);
 
 module.exports = router;
-

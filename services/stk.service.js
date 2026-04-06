@@ -1,6 +1,7 @@
 const logger = require('../logger');
 const mpesaService = require('./mpesa.service');
 const db = require('../db');
+const config = require('../config');
 
 /**
  * STK Push Service
@@ -9,6 +10,27 @@ const db = require('../db');
 class STKService {
     constructor() {
         this.pendingTransactions = new Map();
+        this.paymentWindowMs = config.mpesa.stkPaymentWindowMs;
+    }
+
+    getPaymentExpiryDate(timestamp = new Date()) {
+        return new Date(new Date(timestamp).getTime() + this.paymentWindowMs);
+    }
+
+    isExpired(timestamp = new Date()) {
+        return Date.now() - new Date(timestamp).getTime() > this.paymentWindowMs;
+    }
+
+    getResultDescription(resultCode, fallback = '') {
+        if (resultCode === 1037) {
+            return 'Action timed out';
+        }
+
+        if (resultCode === 1032) {
+            return 'Action cancelled';
+        }
+
+        return fallback || 'Payment not completed';
     }
 
     /**
@@ -22,8 +44,9 @@ class STKService {
         try {
             // Check if M-Pesa is configured
             if (!mpesaService.isConfigured()) {
-                logger.warn('M-Pesa not configured, falling back to simulation mode');
-                return this.simulateSTKPush(orderId, phone, amount);
+                // logger.warn('M-Pesa not configured, falling back to simulation mode');
+                // return this.simulateSTKPush(orderId, phone, amount);
+                throw new Error('M-Pesa is not configured');
             }
 
             // Try real M-Pesa API first
@@ -32,20 +55,25 @@ class STKService {
 
                 // Store pending transaction
                 if (result.checkoutRequestId) {
+                    const timestamp = new Date();
                     this.pendingTransactions.set(result.checkoutRequestId, {
                         orderId,
                         phone: mpesaService.formatPhoneNumber(phone),
                         amount,
-                        timestamp: new Date(),
+                        timestamp,
                         status: 'pending'
                     });
+
+                    result.paymentWindowMs = this.paymentWindowMs;
+                    result.paymentExpiresAt = this.getPaymentExpiryDate(timestamp).toISOString();
                 }
 
                 return result;
             } catch (mpesaError) {
                 // M-Pesa API failed (503 or other error), fall back to simulation
-                logger.warn(`M-Pesa API failed (${mpesaError.message}), falling back to simulation mode`);
-                return this.simulateSTKPush(orderId, phone, amount);
+                // logger.warn(`M-Pesa API failed (${mpesaError.message}), falling back to simulation mode`);
+                // return this.simulateSTKPush(orderId, phone, amount);
+                throw mpesaError;
             }
 
         } catch (error) {
@@ -92,13 +120,14 @@ class STKService {
 
             // Generate fake checkout request ID
             const checkoutRequestId = `ws_CO_${orderId}_${Date.now()}_sim`;
+            const timestamp = new Date();
             
             // Store pending transaction
             this.pendingTransactions.set(checkoutRequestId, {
                 orderId,
                 phone: formattedPhone,
                 amount,
-                timestamp: new Date(),
+                timestamp,
                 status: 'pending',
                 simulated: true
             });
@@ -112,7 +141,9 @@ class STKService {
                 customerMessage: 'Please enter your M-Pesa PIN on your phone (SIMULATED)',
                 orderId,
                 amount,
-                simulated: true
+                simulated: true,
+                paymentWindowMs: this.paymentWindowMs,
+                paymentExpiresAt: this.getPaymentExpiryDate(timestamp).toISOString()
             };
         } catch (error) {
             logger.error('Simulated STK push failed:', error);
@@ -162,26 +193,30 @@ class STKService {
             const order = orders[0];
 
             const resultCode = Number(parsed.resultCode ?? parsed.ResultCode ?? 1);
-            const newStatus = resultCode === 0 ? 'paid' : 'failed';
+            const isPaymentSuccess = resultCode === 0;
+            const newStatus = isPaymentSuccess ? 'paid' : 'pending';
+            const resultDesc = this.getResultDescription(resultCode, parsed.resultDesc ?? parsed.ResultDesc);
             const receiptIdentifier = parsed.mpesaReceiptNumber ?? parsed.MpesaReceiptNumber ?? parsed.merchantRequestId ?? parsed.MerchantRequestID ?? null;
 
-            if (newStatus === 'paid') {
+            if (isPaymentSuccess) {
                 await db.query(
-                    'UPDATE orders SET status = ?, mpesa_receipt = ? WHERE id = ?',
+                    'UPDATE orders SET status = ?, mpesa_receipt = ?, paid_at = NOW() WHERE id = ?',
                     [newStatus, receiptIdentifier, order.id]
                 );
             } else {
                 await db.query(
-                    'UPDATE orders SET status = ?, mpesa_receipt = NULL WHERE id = ?',
+                    'UPDATE orders SET status = ?, mpesa_receipt = NULL, paid_at = NULL, checkout_request_id = NULL WHERE id = ?',
                     [newStatus, order.id]
                 );
             }
 
             return {
                 ...parsed,
+                resultDesc,
                 orderId: order.id,
                 amount: order.total,
-                phone: pending?.phone ?? parsed.phone
+                phone: pending?.phone ?? parsed.phone,
+                success: isPaymentSuccess
             };
 
         } catch (error) {
@@ -326,14 +361,29 @@ class STKService {
             if (checkoutRequestId?.endsWith('_sim')) {
                 const transaction = this.pendingTransactions.get(checkoutRequestId);
                 if (transaction) {
+                    if (this.isExpired(transaction.timestamp)) {
+                        this.pendingTransactions.delete(checkoutRequestId);
+                        return {
+                            success: false,
+                            paymentConfirmed: false,
+                            state: 'timed_out',
+                            resultCode: 1037,
+                            resultDesc: 'Payment request timed out'
+                        };
+                    }
+
                     return {
                         success: true,
+                        paymentConfirmed: false,
+                        state: 'pending',
                         resultCode: 0,
                         resultDesc: 'Success - Pending'
                     };
                 }
                 return {
                     success: false,
+                    paymentConfirmed: false,
+                    state: 'not_found',
                     resultCode: 1,
                     resultDesc: 'Transaction not found'
                 };
@@ -345,7 +395,7 @@ class STKService {
             logger.info('Looking up order for checkout_request_id', { checkoutRequestId });
             
             const orders = await db.query(
-                'SELECT id, status, mpesa_receipt FROM orders WHERE checkout_request_id = ? LIMIT 1',
+                'SELECT id, status, mpesa_receipt, updated_at FROM orders WHERE checkout_request_id = ? LIMIT 1',
                 [checkoutRequestId]
             );
 
@@ -355,8 +405,22 @@ class STKService {
                 if (order.status === 'paid') {
                     return {
                         success: true,
+                        paymentConfirmed: true,
+                        state: 'paid',
                         resultCode: 0,
                         resultDesc: 'Payment completed',
+                        orderId: order.id,
+                        receiptNumber: order.mpesa_receipt
+                    };
+                }
+
+                if (order.status === 'pending' && order.updated_at && this.isExpired(order.updated_at)) {
+                    return {
+                        success: false,
+                        paymentConfirmed: false,
+                        state: 'timed_out',
+                        resultCode: 1037,
+                        resultDesc: 'Payment request timed out',
                         orderId: order.id,
                         receiptNumber: order.mpesa_receipt
                     };
@@ -366,6 +430,8 @@ class STKService {
                 // because the sandbox query endpoint is flaky. The correct signal is the callback.
                 return {
                     success: true,
+                    paymentConfirmed: false,
+                    state: 'pending',
                     resultCode: 0,
                     resultDesc: 'Payment pending - awaiting callback',
                     orderId: order.id,
@@ -400,7 +466,7 @@ class STKService {
      */
     cleanupOldTransactions() {
         const now = new Date();
-        const expiryTime = 30 * 60 * 1000; // 30 minutes
+        const expiryTime = this.paymentWindowMs;
 
         for (const [id, transaction] of this.pendingTransactions.entries()) {
             if (now - transaction.timestamp > expiryTime) {

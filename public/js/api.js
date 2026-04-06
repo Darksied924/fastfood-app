@@ -29,6 +29,38 @@ const api = {
         return this.handleResponse(response);
     },
 
+    async getGoogleAuthConfig() {
+        const response = await fetch(`${API_BASE}/auth/google/config`, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return this.handleResponse(response);
+    },
+
+    async googleLogin(credential) {
+        const response = await fetch(`${API_BASE}/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential })
+        });
+        return this.handleResponse(response);
+    },
+
+    async getFacebookAuthConfig() {
+        const response = await fetch(`${API_BASE}/auth/facebook/config`, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return this.handleResponse(response);
+    },
+
+    async facebookLogin(accessToken) {
+        const response = await fetch(`${API_BASE}/auth/facebook`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessToken })
+        });
+        return this.handleResponse(response);
+    },
+
     async register(userData) {
         const response = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',

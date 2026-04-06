@@ -31,7 +31,7 @@ function injectHeader() {
                 <span></span>
                 <span></span>
             </button>
-            <a href="/" class="logo">Fast Food</a>
+            <a href="/" class="logo">CraveDash</a>
             <div class="nav-right">
                 <button
                     class="back-nav-btn ${showBackButton ? '' : 'hidden'}"
@@ -101,7 +101,7 @@ function injectFooter() {
 
     footer.innerHTML = `
         <div class="footer-content">
-            <p>&copy; ${new Date().getFullYear()} FastFood. All rights reserved.</p>
+            <p>&copy; ${new Date().getFullYear()} CraveDash. All rights reserved.</p>
             <p>Delicious food delivered fast!</p>
         </div>
     `;

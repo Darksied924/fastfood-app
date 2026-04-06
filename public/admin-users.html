@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Users - FastFood Admin</title>
+    <title>Users - CraveDash Admin</title>
     <meta name="description" content="Manage user accounts - create, edit, or remove users and assign roles">
-    <meta name="author" content="FastFood Kenya">
+    <meta name="author" content="CraveDash Kenya">
     <meta name="theme-color" content="#ff6b35">
     <meta name="robots" content="noindex, nofollow">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://fastfood-app.com/admin/users">
-    <meta property="og:title" content="Users - FastFood Admin">
+    <meta property="og:url" content="https://cravedash.app/admin/users">
+    <meta property="og:title" content="Users - CraveDash Admin">
     <meta property="og:description" content="Manage user accounts - create, edit, or remove users and assign roles">
-    <meta property="og:image" content="https://fastfood-app.com/images/og-admin-users.jpg">
-    <meta property="og:site_name" content="FastFood Kenya">
+    <meta property="og:image" content="https://cravedash.app/images/og-admin-users.jpg">
+    <meta property="og:site_name" content="CraveDash Kenya">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:url" content="https://fastfood-app.com/admin/users">
-    <meta name="twitter:title" content="Users - FastFood Admin">
+    <meta name="twitter:url" content="https://cravedash.app/admin/users">
+    <meta name="twitter:title" content="Users - CraveDash Admin">
     <meta name="twitter:description" content="Manage user accounts - create, edit, or remove users and assign roles">
-    <meta name="twitter:image" content="https://fastfood-app.com/images/og-admin-users.jpg">
+    <meta name="twitter:image" content="https://cravedash.app/images/og-admin-users.jpg">
     
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
@@ -32,19 +32,28 @@
 
     <main class="dashboard-container">
         <div class="dashboard-header">
-            <h1>👥 User Management</h1>
+            <div class="dashboard-header-copy">
+                <p class="dashboard-eyebrow">Administration</p>
+                <h1>👥 User Management</h1>
+                <p class="dashboard-subtitle">Review account distribution, manage staff access, and keep user records organized across the platform.</p>
+            </div>
             <div class="user-role">ADMIN</div>
         </div>
 
         <div class="dashboard-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
-                <h3 style="margin:0; border-bottom:none; padding:0;">Users by Role</h3>
-                <div style="display:flex; gap:0.5rem;">
+            <div class="users-card-header">
+                <div class="users-card-title-group">
+                    <p class="users-card-kicker">Directory overview</p>
+                    <h3>Users by Role</h3>
+                    <p class="users-card-subtitle">A structured view of customer and staff accounts, grouped by role for quick review.</p>
+                </div>
+                <div class="users-card-actions">
                     <button class="btn btn-secondary" onclick="showEditUsersModal()" data-tooltip="Edit or delete existing users">✏️ Edit Users</button>
                     <button class="btn btn-primary" onclick="showAddUserModal()" data-tooltip="Create a new user account">+ Add User</button>
                 </div>
             </div>
-            <div id="users-list"></div>
+            <div id="users-summary" class="users-summary"></div>
+            <div id="users-list" class="users-directory"></div>
         </div>
     </main>
 
@@ -145,4 +154,3 @@
     <script src="/js/admin-users.js"></script>
 </body>
 </html>
-

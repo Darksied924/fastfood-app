@@ -5,6 +5,12 @@ const { successResponse, errorResponse } = require('../utils/response.util');
 const paymentService = require('../services/payment.service');
 const mpesaService = require('../services/mpesa.service');
 
+function logPayload(label, payload) {
+  logger.info(label, {
+    payload
+  });
+}
+
 // @desc    Initiate STK Push
 // @route   POST /api/payments/stk-push
 const initiateSTKPush = asyncHandler(async (req, res) => {
@@ -44,22 +50,22 @@ const stkCallback = asyncHandler(async (req, res) => {
 
   const callbackData = req.body;
 
-  logger.info('MPESA CALLBACK BODY:', JSON.stringify(callbackData));
-  logger.info('FULL CALLBACK PAYLOAD:', JSON.stringify(callbackData));
+  logPayload('MPESA CALLBACK BODY', callbackData);
+  logPayload('FULL CALLBACK PAYLOAD', callbackData);
 
   // Log the callback with detailed info
-  logger.info('STK callback raw data:', JSON.stringify(callbackData));
+  logPayload('STK callback raw data', callbackData);
   
   // Debug: Log the body structure to help troubleshoot
-  logger.info('STK callback Body:', JSON.stringify(callbackData.Body));
-  logger.info('STK callback stkCallback:', JSON.stringify(callbackData.Body?.stkCallback));
+  logPayload('STK callback Body', callbackData.Body);
+  logPayload('STK callback stkCallback', callbackData.Body?.stkCallback);
 
   try {
     // Handle the callback
     const result = await paymentService.handleSTKCallback(callbackData);
     
     // Log the result for debugging
-    logger.info('STK callback result:', JSON.stringify(result));
+    logPayload('STK callback result', result);
 
     // Always return 200 to M-Pesa to acknowledge receipt
     res.status(200).json({

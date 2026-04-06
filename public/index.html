@@ -2,297 +2,217 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FastFood - Delicious Food Delivered Fast</title>
-    <meta name="description" content="Order your favorite fast food online for quick delivery. Burgers, fries, milkshakes and more!">
-    <meta name="author" content="FastFood Kenya">
-    <meta name="theme-color" content="#ff6b35">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CraveDash | Premium Fast Food Delivery</title>
+    <meta name="description" content="Experience restaurant-quality fast food delivered with speed & passion. Burgers, crispy fries, milkshakes & more — order now.">
+    <meta name="author" content="CraveDash Kenya">
+    <meta name="theme-color" content="#D62828">
     <meta name="robots" content="index, follow">
     
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph -->
+    <meta property="og:title" content="CraveDash — Fast Food, Elevated">
+    <meta property="og:description" content="Premium ingredients, lightning delivery, and a seamless experience from order to first bite.">
+    <meta property="og:image" content="https://cravedash.app/images/og-preview.jpg">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://fastfood-app.com/">
-    <meta property="og:title" content="FastFood - Delicious Food Delivered Fast">
-    <meta property="og:description" content="Order your favorite fast food online for quick delivery. Burgers, fries, milkshakes and more!">
-    <meta property="og:image" content="https://fastfood-app.com/images/og-home.jpg">
-    <meta property="og:site_name" content="FastFood Kenya">
-    
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://fastfood-app.com/">
-    <meta name="twitter:title" content="FastFood - Delicious Food Delivered Fast">
-    <meta name="twitter:description" content="Order your favorite fast food online for quick delivery. Burgers, fries, milkshakes and more!">
-    <meta name="twitter:image" content="https://fastfood-app.com/images/og-home.jpg">
     
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🍔</text></svg>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
 </head>
-<body>
+<body class="landing-page">
 
-<header></header>
+<header class="site-header">
+    <div class="container header-inner">
+        <div class="logo">
+            <i class="fas fa-bolt"></i> CraveDash
+        </div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#menu">Menu</a>
+            <a href="#testimonials">Reviews</a>
+            <a href="/login" class="btn-outline-nav">Sign In</a>
+            <a href="/register" class="btn btn-primary landing-page__nav-cta">Get Started</a>
+        </div>
+    </div>
+</header>
 
 <main>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <span class="hero-badge">Fast. Reliable. Delivered.</span>
-
-            <h1 class="hero-title">
-                <span class="title-line">Fast Food,</span>
-                <span class="title-line gradient-text">Delivered Fast</span>
-            </h1>
-
-            <p class="hero-subtitle">
-                Fresh ingredients, prepared with care and delivered in minutes. 
-                Order seamlessly anytime, anywhere.
-            </p>
-
-            <div class="hero-actions">
-                <a href="/register" class="btn btn-primary btn-large" data-tooltip="Create a new account to start ordering">Get Started</a>
-                <a href="/login" class="btn btn-secondary btn-large" data-tooltip="Log in to your existing account">Login</a>
-            </div>
-
-            <div class="hero-stats">
-                <div class="stat-item">
-                    <span class="stat-number">5000+</span>
-                    <span class="stat-label">Happy Customers</span>
+    <div class="container">
+        <!-- Hero -->
+        <section class="hero">
+            <div>
+                <span class="hero-badge"><i class="fas fa-motorcycle"></i> Free delivery on first order</span>
+                <h1 class="hero-title">Cravings,<br>meet <span class="gradient-text">speed & soul.</span></h1>
+                <p class="hero-subtitle">Restaurant-quality burgers, crispy fries, and hand-spun shakes — delivered to your door in under 30 minutes.</p>
+                <div class="hero-actions">
+                    <a href="/register" class="btn btn-primary btn-large"><i class="fas fa-arrow-right"></i> Order Now</a>
+                    <a href="#menu" class="btn btn-secondary btn-large"><i class="fas fa-utensils"></i> Explore Menu</a>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-number">30 min</span>
-                    <span class="stat-label">Average Delivery</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">24/7</span>
-                    <span class="stat-label">Service</span>
+                <div class="hero-stats">
+                    <div class="stat-item"><span class="stat-number">10k+</span><span class="stat-label">Daily Orders</span></div>
+                    <div class="stat-item"><span class="stat-number">22 min</span><span class="stat-label">Avg. Delivery</span></div>
+                    <div class="stat-item"><span class="stat-number">4.9★</span><span class="stat-label">Customer rating</span></div>
                 </div>
             </div>
-        </div>
+            <div class="hero-image">
+                <div class="floating-grid">
+                    <div class="food-card-icon">🍔<br><span class="food-card-label">Double Smash</span></div>
+                    <div class="food-card-icon">🍟<br><span class="food-card-label">Sea Salt Fries</span></div>
+                    <div class="food-card-icon">🥤<br><span class="food-card-label">Oreo Shake</span></div>
+                    <div class="food-card-icon">🍕<br><span class="food-card-label">Pepperoni</span></div>
+                </div>
+            </div>
+        </section>
+    </div>
 
-        <div class="hero-image">
-            <div class="floating-food">
-                <span class="food-emoji burger">🍔</span>
-                <span class="food-emoji fries">🍟</span>
-                <span class="food-emoji drink">🥤</span>
-                <span class="food-emoji pizza">🍕</span>
+    <!-- Features section -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-subtitle">WHY CRAVEDASH</div>
+                <h2 class="section-title">Designed for <span class="gradient-text">flavor & reliability</span></h2>
+                <p>From kitchen to doorstep — no compromises.</p>
+            </div>
+            <div class="feature-grid">
+                <div class="feature-card"><div class="feature-icon">🌿</div><h3>Fresh Ingredients</h3><p>Sourced daily from local farms & butchers.</p></div>
+                <div class="feature-card"><div class="feature-icon">⚡</div><h3>Lightning Delivery</h3><p>Real-time tracking & dedicated riders.</p></div>
+                <div class="feature-card"><div class="feature-icon">🔒</div><h3>Secure Checkout</h3><p>M-Pesa, card, or cash — 100% encrypted.</p></div>
+                <div class="feature-card"><div class="feature-icon">🎁</div><h3>Rewards Club</h3><p>Eat & earn points, unlock free meals.</p></div>
             </div>
         </div>
     </section>
 
-
-    <!-- Features Section -->
-    <section class="features" id="features">
-        <div class="section-header">
-            <span class="section-subtitle">WHY CHOOSE US</span>
-            <h2 class="section-title">Built for <span class="gradient-text">Speed & Quality</span></h2>
-            <p class="section-description">
-                A modern food delivery experience designed for convenience.
-            </p>
-        </div>
-
-        <div class="feature-grid">
-            <div class="feature-card">
-                <div class="feature-icon-wrapper">
-                    <div class="feature-icon">🍔</div>
-                </div>
-                <h3>Quality Ingredients</h3>
-                <p>Freshly sourced and expertly prepared meals every day.</p>
-                <div class="feature-hover-effect"></div>
+    <!-- Popular items (dynamic) -->
+    <section class="section" id="menu">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-subtitle">CROWD FAVORITES</div>
+                <h2 class="section-title">Bite into <span class="gradient-text">happiness</span></h2>
+                <p>Most loved by our community.</p>
             </div>
-
-            <div class="feature-card">
-                <div class="feature-icon-wrapper">
-                    <div class="feature-icon">⚡</div>
-                </div>
-                <h3>Fast Delivery</h3>
-                <p>Optimized routing ensures your food arrives hot and on time.</p>
-                <div class="feature-hover-effect"></div>
+            <div class="product-grid" id="dynamic-menu">
+                <div class="loading-spinner"><i class="fas fa-spinner fa-pulse"></i> Loading mouthwatering items...</div>
             </div>
-
-            <div class="feature-card">
-                <div class="feature-icon-wrapper">
-                    <div class="feature-icon">💳</div>
-                </div>
-                <h3>Secure Payments</h3>
-                <p>Pay easily via M-Pesa, cards, or cash on delivery.</p>
-                <div class="feature-hover-effect"></div>
+            <div class="landing-page__menu-cta">
+                <a href="/menu" class="btn btn-secondary">View Full Menu <i class="fas fa-chevron-right"></i></a>
             </div>
-
-            <div class="feature-card">
-                <div class="feature-icon-wrapper">
-                    <div class="feature-icon">🌙</div>
-                </div>
-                <h3>Always Available</h3>
-                <p>Open 24/7 to satisfy your cravings anytime.</p>
-                <div class="feature-hover-effect"></div>
-            </div>
-        </div>
-
-        <!-- Moved Learn More Button -->
-        <div class="section-action">
-            <a href="#popular-products" class="btn btn-outline" data-tooltip="Discover our menu and popular items">Learn More</a>
         </div>
     </section>
 
-
-    <!-- Popular Items Section -->
-    <section class="popular-items">
-        <div class="section-header">
-            <span class="section-subtitle">OUR MENU</span>
-            <h2 class="section-title">Customer Favorites</h2>
-            <p class="section-description">Explore our most ordered items.</p>
-        </div>
-
-        <div class="product-grid" id="popular-products">
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Loading items...</p>
+    <!-- Special offer banner -->
+    <div class="container">
+        <div class="offer-banner">
+            <div class="offer-text">
+                <h3>🔥 The Ultimate Combo</h3>
+                <p>Signature Burger + Loaded Fries + Thick Milkshake</p>
+                <div class="offer-price"><span class="old-price">KSh 2,200</span><span class="new-price">KSh 1,499</span></div>
+                <a href="/register" class="btn btn-primary offer-banner__cta">Grab Deal →</a>
             </div>
+            <div class="combo-badge">🍔🍟🥤</div>
         </div>
-
-        <div class="section-action">
-            <a href="/menu" class="btn btn-primary" data-tooltip="Browse our complete menu of delicious options">View Full Menu</a>
-        </div>
-    </section>
-
-
-    <!-- Special Offer Banner -->
-    <section class="offers-banner">
-        <div class="offer-content">
-            <h3>Special Combo Offer</h3>
-            <p class="offer-description">Any burger + fries + drink</p>
-            <div class="offer-price">
-                <span class="old-price">KSh 1,900</span>
-                <span class="new-price">KSh 1,500</span>
-            </div>
-            <a href="/register" class="btn btn-primary" data-tooltip="Create an account to order this special combo">Order Now</a>
-        </div>
-        <div class="offer-image">
-            <span class="combo-emoji">🍔🍟🥤</span>
-        </div>
-    </section>
-
+    </div>
 
     <!-- Testimonials -->
-    <section class="testimonials">
-        <div class="section-header">
-            <span class="section-subtitle">TESTIMONIALS</span>
-            <h2 class="section-title">Trusted by Customers</h2>
-        </div>
-
-        <div class="testimonial-grid">
-            <div class="testimonial-card">
-                <div class="testimonial-rating">⭐⭐⭐⭐⭐</div>
-                <p class="testimonial-text">
-                    Best burger in town. Delivery was fast and everything arrived hot.
-                </p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">👤</div>
-                    <div class="author-info">
-                        <h4>John Doe</h4>
-                        <span>Regular Customer</span>
-                    </div>
-                </div>
+    <section class="section" id="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-subtitle">LOVED BY FOODIES</div>
+                <h2 class="section-title">What they're saying</h2>
             </div>
-
-            <div class="testimonial-card">
-                <div class="testimonial-rating">⭐⭐⭐⭐⭐</div>
-                <p class="testimonial-text">
-                    Seamless payment and reliable service every time.
-                </p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">👤</div>
-                    <div class="author-info">
-                        <h4>Jane Smith</h4>
-                        <span>Food Enthusiast</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="testimonial-card">
-                <div class="testimonial-rating">⭐⭐⭐⭐</div>
-                <p class="testimonial-text">
-                    Great variety and fair pricing. Highly recommended.
-                </p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">👤</div>
-                    <div class="author-info">
-                        <h4>Mike Johnson</h4>
-                        <span>Business Professional</span>
-                    </div>
-                </div>
+            <div class="testimonial-grid">
+                <div class="testimonial-card"><div class="rating">★★★★★</div><p>“Best smash burger in Nairobi. Arrived hot and juicy, exactly as promised.”</p><div class="testimonial-author">— Amina K.</div></div>
+                <div class="testimonial-card"><div class="rating">★★★★★</div><p>“The app is buttery smooth, and delivery is always ahead of schedule. 10/10.”</p><div class="testimonial-author">— Brian M.</div></div>
+                <div class="testimonial-card"><div class="rating">★★★★½</div><p>“Finally a fast food brand that uses real ingredients. Milkshakes are legendary.”</p><div class="testimonial-author">— Zawadi N.</div></div>
             </div>
         </div>
     </section>
 
-
-    <!-- App Download -->
-    <section class="app-download">
-        <div class="app-content">
-            <h2>Download Our App</h2>
-            <p>Access exclusive deals and faster ordering.</p>
+    <!-- App download -->
+    <div class="container">
+        <div class="app-section">
+            <h2 class="app-section__title">Get the CraveDash App</h2>
+            <p class="app-section__copy">Exclusive app-only deals, early access to combos & faster checkout</p>
             <div class="app-buttons">
-                <a href="#" class="app-button" data-tooltip="Download our iOS app from the App Store">
-                    <span class="app-icon">📱</span>
-                    <span class="app-text">App Store</span>
-                </a>
-                <a href="#" class="app-button" data-tooltip="Download our Android app from Google Play">
-                    <span class="app-icon">🤖</span>
-                    <span class="app-text">Google Play</span>
-                </a>
+                <a href="#" class="app-btn"><i class="fab fa-apple"></i> App Store</a>
+                <a href="#" class="app-btn"><i class="fab fa-google-play"></i> Google Play</a>
             </div>
         </div>
-    </section>
-
+    </div>
 </main>
 
-<footer></footer>
+<footer>
+    <div class="container">
+        <p>© 2025 CraveDash — Kenya's premium fast food delivery. All rights reserved.</p>
+        <p class="landing-page__footer-note"><i class="fas fa-heart landing-page__footer-heart"></i> Made with flavor</p>
+    </div>
+</footer>
 
-<button id="backToTop" class="back-to-top" data-tooltip="Scroll back to the top of the page">↑</button>
-
-<script src="/js/api.js"></script>
-<script src="/js/app.js"></script>
+<button id="backToTopBtn" class="back-to-top" aria-label="Back to top"><i class="fas fa-arrow-up"></i></button>
 
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
-    const formatKsh = (amount) => `KSh ${Number(amount || 0).toLocaleString('en-KE', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    })}`;
+    // Mock API with dynamic product loading
+    (function() {
+        const formatKsh = (amount) => `KSh ${Number(amount).toLocaleString('en-KE')}`;
 
-    try {
-        const response = await api.getProducts(true);
-        const products = response.data;
-        const popularProducts = products.slice(0, 4);
-        const grid = document.getElementById('popular-products');
+        const products = [
+            { id: 1, name: "Classic Double Smash", price: 890, image: "🍔", rating: 5 },
+            { id: 2, name: "Spicy Crispy Chicken", price: 750, image: "🐔", rating: 5 },
+            { id: 3, name: "Loaded Cheese Fries", price: 490, image: "🍟", rating: 4.9 },
+            { id: 4, name: "Oreo Crush Milkshake", price: 550, image: "🥤", rating: 5 },
+            { id: 5, name: "BBQ Bacon Burger", price: 1090, image: "🍔", rating: 5 },
+            { id: 6, name: "Vegan Power Bowl", price: 890, image: "🥗", rating: 4.8 }
+        ];
 
-        if (products.length === 0) {
-            grid.innerHTML = '<p class="no-items">No items available at the moment</p>';
-            return;
+        const popular = products.slice(0, 4);
+        const container = document.getElementById('dynamic-menu');
+
+        function renderProducts() {
+            if (!container) return;
+            container.innerHTML = popular.map(p => `
+                <div class="product-card">
+                    <div class="product-img">${p.image} ${p.name.includes('Fries') ? '🍟' : p.name.includes('Shake') ? '🥤' : p.image}</div>
+                    <div class="product-info">
+                        <h3>${p.name}</h3>
+                        <div class="price">${formatKsh(p.price)}</div>
+                        <div class="rating landing-page__product-rating">${'★'.repeat(Math.floor(p.rating))}${p.rating % 1 ? '½' : ''}</div>
+                        <button class="btn btn-block" onclick="window.location.href='/register'">Order Now →</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        grid.innerHTML = popularProducts.map(product => `
-            <div class="product-card">
-                <div class="product-image">${product.image || '🍔'}</div>
-                <div class="product-content">
-                    <h3>${product.name}</h3>
-                    <div class="product-price">${formatKsh(product.price)}</div>
-                    <div class="product-rating">⭐⭐⭐⭐⭐</div>
-                    <button class="btn btn-primary btn-block" onclick="window.location.href='/login'">
-                        Order Now
-                    </button>
-                </div>
-            </div>
-        `).join('');
+        setTimeout(() => {
+            renderProducts();
+        }, 300);
+    })();
 
-    } catch (error) {
-        console.error('Failed to load products:', error);
-        document.getElementById('popular-products').innerHTML =
-            '<p class="error-message">Failed to load products. Please refresh the page.</p>';
-    }
-});
+    // Back to top logic
+    const backBtn = document.getElementById('backToTopBtn');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 500) {
+            backBtn.classList.add('visible');
+        } else {
+            backBtn.classList.remove('visible');
+        }
+    });
+    backBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const targetId = this.getAttribute('href');
+            if (targetId === "#" || targetId === "") return;
+            const target = document.querySelector(targetId);
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
 </script>
 
+<!-- additional interactive micro-tooltip simulation, no external deps needed -->
 </body>
 </html>
-

@@ -3,29 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Orders - FastFood</title>
-    <meta name="description" content="Track all your FastFood orders and order history">
-    <meta name="author" content="FastFood Kenya">
+    <title>My Orders - CraveDash</title>
+    <meta name="description" content="Track all your CraveDash orders and order history">
+    <meta name="author" content="CraveDash Kenya">
     <meta name="theme-color" content="#ff6b35">
     <meta name="robots" content="noindex, nofollow">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://fastfood-app.com/customer/orders">
-    <meta property="og:title" content="My Orders - FastFood">
-    <meta property="og:description" content="Track all your FastFood orders and order history">
-    <meta property="og:image" content="https://fastfood-app.com/images/og-orders.jpg">
-    <meta property="og:site_name" content="FastFood Kenya">
+    <meta property="og:url" content="https://cravedash.app/customer/orders">
+    <meta property="og:title" content="My Orders - CraveDash">
+    <meta property="og:description" content="Track all your CraveDash orders and order history">
+    <meta property="og:image" content="https://cravedash.app/images/og-orders.jpg">
+    <meta property="og:site_name" content="CraveDash Kenya">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:url" content="https://fastfood-app.com/customer/orders">
-    <meta name="twitter:title" content="My Orders - FastFood">
-    <meta name="twitter:description" content="Track all your FastFood orders and order history">
-    <meta name="twitter:image" content="https://fastfood-app.com/images/og-orders.jpg">
+    <meta name="twitter:url" content="https://cravedash.app/customer/orders">
+    <meta name="twitter:title" content="My Orders - CraveDash">
+    <meta name="twitter:description" content="Track all your CraveDash orders and order history">
+    <meta name="twitter:image" content="https://cravedash.app/images/og-orders.jpg">
     
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/cancellation-styles.css">
 </head>
 <body class="customer-orders-page">
     <header></header>
@@ -57,36 +56,51 @@
         <span class="floating-cart-count" id="floatingCartCount">0</span>
     </a>
 
-    <div id="paymentModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('paymentModal')" data-tooltip="Close this dialog">&times;</span>
-            <h3>💳 Simulate M-Pesa Payment</h3>
-            <p>Order Total: <span id="paymentAmount">KSh 0</span></p>
-            <form id="paymentForm">
-                <input type="hidden" id="orderId" name="orderId">
-                <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" placeholder="254712345678" required aria-describedby="phone-hint">
-                    <span id="phone-hint" class="field-hint">Enter your M-Pesa registered phone number</span>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Simulate STK Push</button>
-            </form>
-        </div>
-    </div>
+    <div id="cancellationReviewModal" class="modal">
+        <div class="modal-content review-decision-modal">
+            <span class="close" onclick="closeModal('cancellationReviewModal')" data-tooltip="Close this dialog">&times;</span>
+            <div class="review-decision-hero">
+                <div id="reviewDecisionHeroIcon" class="review-decision-hero-icon" aria-hidden="true">✓</div>
+                <span class="review-decision-pill">Review decision</span>
+                <h3 id="reviewDecisionTitle">Cancellation review update</h3>
+                <p id="reviewDecisionSummary">We reviewed your cancellation request and posted an update for this order.</p>
+            </div>
 
-    <div id="cancelModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('cancelModal')" data-tooltip="Close this dialog">&times;</span>
-            <h3>Cancel Order</h3>
-            <p>Tell us why you want to cancel this order. The final eligibility check still happens on the server.</p>
-            <form id="cancelOrderForm">
-                <input type="hidden" id="cancelOrderId" name="orderId">
-                <div class="form-group">
-                    <label for="cancelReason">Reason</label>
-                    <textarea id="cancelReason" name="reason" maxlength="500" placeholder="Changed my mind, wrong address, ordered by mistake..." required></textarea>
+            <section id="reviewDecisionOutcomePanel" class="review-decision-panel review-decision-panel--highlight">
+                <small id="reviewDecisionOutcomeLabel">Review outcome</small>
+                <p id="reviewDecisionOutcomeText">A new update is available for this cancelled order.</p>
+            </section>
+
+            <div class="review-decision-grid">
+                <article class="review-decision-card">
+                    <small>Order reference</small>
+                    <strong id="reviewDecisionOrderId">--</strong>
+                    <p id="reviewDecisionStatusText">Awaiting latest review status.</p>
+                </article>
+                <article class="review-decision-card">
+                    <small>Reviewed on</small>
+                    <strong id="reviewDecisionProcessedAt">--</strong>
+                    <p>The latest refund review timestamp recorded for this cancellation.</p>
+                </article>
+            </div>
+
+            <section class="review-decision-panel">
+                <small>Admin note</small>
+                <div id="reviewDecisionNote" class="review-decision-note">
+                    No note has been provided for this review yet.
                 </div>
-                <button type="submit" class="btn btn-danger btn-block">Submit Cancellation</button>
-            </form>
+            </section>
+
+            <section class="review-decision-panel review-decision-panel--muted">
+                <small>Your cancellation reason</small>
+                <p id="reviewDecisionReason">No cancellation reason was saved for this order.</p>
+            </section>
+
+            <div class="review-decision-actions">
+                <button type="button" class="btn btn-secondary btn-block" onclick="closeModal('cancellationReviewModal')">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 
@@ -99,4 +113,3 @@
     <script src="/js/app.js"></script>
 </body>
 </html>
-

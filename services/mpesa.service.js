@@ -159,7 +159,7 @@ class MpesaService {
                 PhoneNumber: formattedPhone,
                 CallBackURL: this.callbackUrl,
                 AccountReference: `ORDER${orderId}`,
-                TransactionDesc: `FastFood Order ${orderId}`
+                TransactionDesc: `CraveDash Order ${orderId}`
             };
 
             logger.info(`Initiating STK push for order ${orderId}: KSh ${amount} to ${formattedPhone}`);
@@ -307,7 +307,7 @@ class MpesaService {
                 Amount: Math.ceil(amount),
                 Msisdn: formattedPhone,
                 BillRefNumber: reference || 'ORDER',
-                Remarks: 'FastFood Order Payment'
+                Remarks: 'CraveDash Order Payment'
             };
 
             const response = await axios.post(
