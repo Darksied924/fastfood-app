@@ -33,7 +33,9 @@
     <main class="auth-container">
         <div class="auth-card animate-slide-up">
             <div class="auth-header">
-                <div class="auth-logo">🍔</div>
+                <div class="auth-hero-image">
+                    <img src="/images/ui/hero-illustration.svg" alt="Fresh food delivery illustration">
+                </div>
                 <h2>Welcome Back!</h2>
                 <p>Log in to continue ordering delicious food</p>
             </div>
@@ -134,20 +136,9 @@
             }
         }
 
-        // Show toast notification
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast show ${type}`;
-            
-            setTimeout(() => {
-                toast.className = 'toast';
-            }, 3000);
-        }
-
         function completeLogin(response) {
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify({
+            sessionStorage.setItem('token', response.data.token);
+            sessionStorage.setItem('user', JSON.stringify({
                 id: response.data.id,
                 name: response.data.name,
                 email: response.data.email,

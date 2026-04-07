@@ -45,11 +45,12 @@ const ensureColumnDefinition = async (connection, tableName, columnName, targetD
 
   const currentType = String(columns[0].COLUMN_TYPE || '').toLowerCase();
   const currentNullable = String(columns[0].IS_NULLABLE || '').toUpperCase();
-  const normalizedTarget = String(targetDefinition || '').toLowerCase();
+  const normalizedCurrent = currentType.replace(/\(\d+\)/, '');
+  const normalizedTarget = String(targetDefinition || '').toLowerCase().replace(/\(\d+\)/, '').split(' null')[0].split(' not null')[0];
   const expectsNull = normalizedTarget.includes(' null');
   const nullableMatches = expectsNull ? currentNullable === 'YES' : currentNullable === 'NO';
 
-  if (currentType === normalizedTarget.split(' null')[0].split(' not null')[0] && nullableMatches) {
+  if (normalizedCurrent === normalizedTarget && nullableMatches) {
     return;
   }
 
@@ -320,7 +321,7 @@ const ensureProductsSchema = async (connection) => {
 const ensureExpensesSchema = async (connection) => {
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS expenses (
-      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      id INT AUTO_INCREMENT PRIMARY KEY,
       category VARCHAR(100) NOT NULL,
       amount DECIMAL(10, 2) NOT NULL,
       notes TEXT NULL,
@@ -479,6 +480,61 @@ const ensureRefundRequestsSchema = async (connection) => {
   );
 };
 
+const ensureDriverLocationSchema = async (connection) => {
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS driver_locations (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      delivery_id INT UNSIGNED NOT NULL,
+      order_id INT UNSIGNED NULL,
+      latitude DECIMAL(10,8) NOT NULL,
+      longitude DECIMAL(11,8) NOT NULL,
+      location_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_driver_delivery (delivery_id),
+      INDEX idx_driver_locations_delivery (delivery_id),
+      INDEX idx_driver_locations_order (order_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await ensureTableEngineInnoDB(connection, 'driver_locations');
+  await ensureColumnMatchesReferencedColumn(connection, 'driver_locations', 'delivery_id', 'users', 'id', {
+    nullable: false,
+    after: 'id'
+  });
+  await ensureColumnMatchesReferencedColumn(connection, 'driver_locations', 'order_id', 'orders', 'id', {
+    nullable: true,
+    after: 'delivery_id'
+  });
+
+  await ensureIndex(
+    connection,
+    'driver_locations',
+    'idx_driver_locations_delivery',
+    'CREATE INDEX idx_driver_locations_delivery ON driver_locations (delivery_id)'
+  );
+  await ensureIndex(
+    connection,
+    'driver_locations',
+    'idx_driver_locations_order',
+    'CREATE INDEX idx_driver_locations_order ON driver_locations (order_id)'
+  );
+
+  await ensureForeignKey(
+    connection,
+    'fk_driver_locations_delivery',
+    'driver_locations',
+    'ALTER TABLE driver_locations ADD CONSTRAINT fk_driver_locations_delivery FOREIGN KEY (delivery_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE'
+  );
+
+  await ensureForeignKey(
+    connection,
+    'fk_driver_locations_order',
+    'driver_locations',
+    'ALTER TABLE driver_locations ADD CONSTRAINT fk_driver_locations_order FOREIGN KEY (order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE SET NULL'
+  );
+};
+
 const ensureIndex = async (connection, tableName, indexName, createIndexSql) => {
   const [indexes] = await connection.execute(
     `SELECT INDEX_NAME
@@ -540,6 +596,7 @@ const testConnection = async () => {
     await ensureExpensesSchema(connection);
     await ensureOrderCancellationSchema(connection);
     await ensureRefundRequestsSchema(connection);
+    await ensureDriverLocationSchema(connection);
     await ensureAnalyticsIndexes(connection);
     logger.info('Database connected successfully');
     return true;

@@ -2,10 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
+const { Server } = require('socket.io');
 const app = require('./app');
 const config = require('./config');
 const logger = require('./logger');
 const db = require('./db');
+const { setSocketServer } = require('./socket');
 
 const HTTP_PORT = config.port;
 const HTTPS_PORT = config.https.port;
@@ -71,7 +73,11 @@ const startServer = async () => {
     if (config.https.enabled) {
       const tlsOptions = loadTlsOptions();
 
-      appServer = https.createServer(tlsOptions, app).listen(HTTPS_PORT, () => {
+      appServer = https.createServer(tlsOptions, app);
+      const io = new Server(appServer);
+      setSocketServer(io);
+
+      appServer.listen(HTTPS_PORT, () => {
         logger.info(`HTTPS server running in ${config.nodeEnv} mode on port ${HTTPS_PORT}`);
         logger.info(`Web app: ${WEB_APP_URL}`);
       });
@@ -86,6 +92,8 @@ const startServer = async () => {
         logger.info(`Server running in ${config.nodeEnv} mode on port ${HTTP_PORT}`);
         logger.info(`Web app: ${WEB_APP_URL}`);
       });
+      const io = new Server(appServer);
+      setSocketServer(io);
     }
   } catch (error) {
     logger.error('Failed to start server.');

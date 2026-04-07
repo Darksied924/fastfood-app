@@ -16,10 +16,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         await createProduct(addProductForm);
     });
 
+    // Add image preview handler for add product
+    const productImageInput = document.getElementById('productImage');
+    productImageInput.addEventListener('change', (e) => {
+        handleImagePreview(e, 'imagePreview', 'previewImg');
+    });
+
     const editProductForm = document.getElementById('editProductForm');
     editProductForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         await updateProduct(editProductForm);
+    });
+
+    // Add image preview handler for edit product
+    const editProductImageInput = document.getElementById('editProductImage');
+    editProductImageInput.addEventListener('change', (e) => {
+        handleImagePreview(e, 'editImagePreview', 'editPreviewImg');
     });
 
     const editProductSelect = document.getElementById('editProductSelect');
@@ -59,7 +71,7 @@ async function loadProducts() {
                 <tbody>
                     ${products.map((product) => `
                         <tr>
-                            <td>${product.image || '🍔'}</td>
+                            <td>${product.image && product.image.startsWith('/') ? '<img src="' + product.image + '" style="max-width: 50px; max-height: 50px;"/>' : (product.image || '🍔')}</td>
                             <td>${product.name}</td>
                             <td>${formatKsh(product.price)}</td>
                             <td>${product.available ? 'Yes' : 'No'}</td>
@@ -71,7 +83,7 @@ async function loadProducts() {
 
         populateEditProductOptions();
     } catch (error) {
-        alert(`Failed to load products: ${error.message}`);
+        showToast(`Failed to load products: ${error.message}`, 'error');
     }
 }
 
@@ -101,8 +113,19 @@ function populateEditForm(productId) {
 
     document.getElementById('editProductName').value = product.name || '';
     document.getElementById('editProductPrice').value = String(Math.round(Number(product.price)));
-    document.getElementById('editProductImage').value = product.image || '🍔';
     document.getElementById('editProductAvailable').checked = Boolean(product.available);
+    
+    // Clear file input and show current image if available
+    document.getElementById('editProductImage').value = '';
+    const previewDiv = document.getElementById('editImagePreview');
+    const previewImg = document.getElementById('editPreviewImg');
+    
+    if (product.image && product.image.startsWith('/images/')) {
+        previewImg.src = product.image;
+        previewDiv.style.display = 'block';
+    } else {
+        previewDiv.style.display = 'none';
+    }
 }
 
 async function createProduct(addProductForm) {
@@ -110,27 +133,47 @@ async function createProduct(addProductForm) {
     const productData = {
         name: String(formData.get('name') || '').trim(),
         price: Number(formData.get('price')),
-        image: String(formData.get('image') || '').trim() || '🍔',
         available: formData.get('available') === 'on'
     };
 
+    // Validate required fields
+    if (!productData.name) {
+        showToast('Please enter a product name.', 'error');
+        return;
+    }
+    if (!productData.price || productData.price <= 0) {
+        showToast('Please enter a valid price.', 'error');
+        return;
+    }
+
     try {
-        const response = await api.createProduct(productData);
+        // Use FormData for file upload
+        const submitData = new FormData();
+        submitData.append('name', productData.name);
+        submitData.append('price', productData.price);
+        submitData.append('available', productData.available ? 1 : 0);
+        
+        const imageFile = formData.get('image');
+        if (imageFile && imageFile.size > 0) {
+            submitData.append('image', imageFile);
+        }
+
+        const response = await api.createProduct(submitData);
         if (response.success) {
-            alert('Product created successfully');
+            showToast('Menu item added successfully.', 'success');
             closeModal('addProductModal');
             addProductForm.reset();
-            document.getElementById('productImage').value = '🍔';
+            document.getElementById('imagePreview').style.display = 'none';
             await loadProducts();
         }
     } catch (error) {
-        alert(`Failed to create product: ${error.message}`);
+        showToast(`Failed to create product: ${error.message}`, 'error');
     }
 }
 
 function showEditProductModal() {
     if (productsCache.length === 0) {
-        alert('No products available');
+        showToast('No products available yet. Please add one first.', 'info');
         return;
     }
 
@@ -144,26 +187,47 @@ async function updateProduct(editProductForm) {
     const productData = {
         name: String(formData.get('name') || '').trim(),
         price: Number(formData.get('price')),
-        image: String(formData.get('image') || '').trim() || '🍔',
         available: formData.get('available') === 'on'
     };
 
+    // Validate required fields
+    if (!productData.name) {
+        showToast('Please enter a product name.', 'error');
+        return;
+    }
+    if (!productData.price || productData.price <= 0) {
+        showToast('Please enter a valid price.', 'error');
+        return;
+    }
+
     try {
-        const response = await api.updateProduct(productId, productData);
+        // Use FormData for file upload
+        const submitData = new FormData();
+        submitData.append('name', productData.name);
+        submitData.append('price', productData.price);
+        submitData.append('available', productData.available ? 1 : 0);
+        
+        const imageFile = formData.get('image');
+        if (imageFile && imageFile.size > 0) {
+            submitData.append('image', imageFile);
+        }
+
+        const response = await api.updateProduct(productId, submitData);
         if (response.success) {
-            alert('Product updated successfully');
+            showToast('Menu item updated successfully.', 'success');
             closeModal('editProductModal');
             await loadProducts();
         }
     } catch (error) {
-        alert(`Failed to update product: ${error.message}`);
+        showToast(`Failed to update product: ${error.message}`, 'error');
     }
 }
+
 async function deleteSelectedProduct() {
     const select = document.getElementById('editProductSelect');
     const productId = select?.value;
     if (!productId) {
-        alert('Please select a product');
+        showToast('Please select a product to edit.', 'error');
         return;
     }
 
@@ -172,12 +236,12 @@ async function deleteSelectedProduct() {
     try {
         const response = await api.deleteProduct(productId);
         if (response.success) {
-            alert('Product deleted successfully');
+            showToast('Product removed successfully.', 'success');
             closeModal('editProductModal');
             await loadProducts();
         }
     } catch (error) {
-        alert(`Failed to delete product: ${error.message}`);
+        showToast(`Failed to delete product: ${error.message}`, 'error');
     }
 }
 
@@ -187,6 +251,23 @@ function showAddProductModal() {
 
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
+}
+
+function handleImagePreview(event, previewDivId, previewImgId) {
+    const file = event.target.files[0];
+    const previewDiv = document.getElementById(previewDivId);
+    const previewImg = document.getElementById(previewImgId);
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImg.src = e.target.result;
+            previewDiv.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        previewDiv.style.display = 'none';
+    }
 }
 
 window.showAddProductModal = showAddProductModal;

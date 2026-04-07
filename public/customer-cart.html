@@ -79,7 +79,9 @@
                     <h4>Order Summary</h4>
                     <p><strong>Total:</strong> <span id="deliveryOrderTotal">KSh 0</span></p>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Confirm details and proceed to payment">Confirm & Proceed to Payment</button>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-block" data-tooltip="Confirm details and proceed to payment">Confirm & Proceed to Payment</button>
+                </div>
             </form>
         </div>
     </div>
@@ -96,7 +98,9 @@
                     <input type="tel" id="phone" name="phone" placeholder="254712345678" required aria-describedby="phone-hint">
                     <span id="phone-hint" class="field-hint">Enter the phone number registered with M-Pesa</span>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Pay with M-Pesa</button>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Pay with M-Pesa</button>
+                </div>
             </form>
             <div id="paymentStatus" class="payment-status" style="display: none;"></div>
         </div>
@@ -118,6 +122,8 @@
 
     <script src="/js/api.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/socket.js"></script>
     <script src="/js/cart.js"></script>
     <script src="/js/customer.js"></script>
     <script src="/js/app.js"></script>

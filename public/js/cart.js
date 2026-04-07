@@ -1,4 +1,4 @@
-// Cart management using localStorage
+// Cart management using sessionStorage
 const cart = {
     formatKsh(amount) {
         return `KSh ${Number(amount || 0).toLocaleString('en-KE', {
@@ -7,9 +7,9 @@ const cart = {
         })}`;
     },
 
-    // Get cart from localStorage
+    // Get cart from sessionStorage
     getCart() {
-        const cartStr = localStorage.getItem('cart');
+        const cartStr = sessionStorage.getItem('cart');
         return cartStr ? JSON.parse(cartStr) : [];
     },
 
@@ -22,9 +22,9 @@ const cart = {
         }));
     },
 
-    // Save cart to localStorage
+    // Save cart to sessionStorage
     saveCart(cartItems) {
-        localStorage.setItem('cart', JSON.stringify(cartItems));
+        sessionStorage.setItem('cart', JSON.stringify(cartItems));
         this.updateCartUI();
         this.emitCartUpdated();
     },
@@ -81,7 +81,7 @@ const cart = {
 
     // Clear cart
     clearCart() {
-        localStorage.removeItem('cart');
+        sessionStorage.removeItem('cart');
         this.updateCartUI();
         this.emitCartUpdated();
         sessionStorage.removeItem('replacingOrderId');
@@ -273,6 +273,58 @@ const cart = {
     }
 };
 
+let paymentPollInterval = null;
+
+function handleRealtimePaymentUpdate(payload) {
+    const pendingOrderId = sessionStorage.getItem('pendingOrderId');
+    if (!pendingOrderId || String(payload.orderId) !== String(pendingOrderId)) {
+        return;
+    }
+
+    const statusDiv = document.getElementById('paymentStatus');
+    if (!statusDiv) {
+        return;
+    }
+
+    if (paymentPollInterval) {
+        clearInterval(paymentPollInterval);
+        paymentPollInterval = null;
+    }
+
+    renderPaymentStatus(
+        statusDiv,
+        'success',
+        'Payment confirmed',
+        'Your order has been paid successfully.'
+    );
+
+    setTimeout(() => {
+        const paymentModal = document.getElementById('paymentModal');
+        if (paymentModal) {
+            paymentModal.style.display = 'none';
+        }
+        cart.clearCart();
+        cart.showNotification('Payment successful! Your order is being processed.');
+        sessionStorage.removeItem('pendingCheckoutId');
+        sessionStorage.removeItem('pendingOrderId');
+        sessionStorage.removeItem('pendingPaymentExpiresAt');
+        const paymentForm = document.getElementById('paymentForm');
+        if (paymentForm) {
+            paymentForm.reset();
+            const submitBtn = paymentForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Pay with M-Pesa';
+            }
+        }
+        statusDiv.style.display = 'none';
+
+        if (typeof loadDashboard === 'function') {
+            loadDashboard();
+        }
+    }, 1500);
+}
+
 const PAYMENT_POLL_INTERVAL_MS = 15000;
 
 function renderPaymentStatus(statusDiv, state, title, body) {
@@ -295,6 +347,16 @@ function renderPaymentStatus(statusDiv, state, title, body) {
 document.addEventListener('DOMContentLoaded', () => {
     cart.updateCartUI();
     cart.emitCartUpdated();
+
+    if (window.socketClient && typeof window.socketClient.connect === 'function') {
+        window.socketClient.connect();
+        window.socketClient.on('paymentConfirmed', handleRealtimePaymentUpdate);
+        window.socketClient.on('orderStatusUpdated', (payload) => {
+            if (payload.status === 'paid') {
+                handleRealtimePaymentUpdate(payload);
+            }
+        });
+    }
 });
 
 // Payment form handler
@@ -405,14 +467,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         const maxAttempts = Math.max(1, Math.ceil(paymentWindowMs / PAYMENT_POLL_INTERVAL_MS));
                         let attempts = 0;
                         
-                        const pollInterval = setInterval(async () => {
+                        paymentPollInterval = setInterval(async () => {
                             attempts++;
                             try {
                                 const statusResult = await api.queryPaymentStatus(checkoutId);
                                 const paymentStatus = statusResult.data || {};
                                 
                                 if (statusResult.success && paymentStatus.paymentConfirmed === true) {
-                                    clearInterval(pollInterval);
+                                    clearInterval(paymentPollInterval);
+                                    paymentPollInterval = null;
                                     renderPaymentStatus(
                                         statusDiv,
                                         'success',
@@ -445,7 +508,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     attempts >= maxAttempts ||
                                     Date.now() >= new Date(paymentExpiresAt).getTime()
                                 ) {
-                                    clearInterval(pollInterval);
+                                    if (paymentPollInterval) {
+                                        clearInterval(paymentPollInterval);
+                                        paymentPollInterval = null;
+                                    }
                                     renderPaymentStatus(
                                         statusDiv,
                                         'error',

@@ -3,7 +3,7 @@ const API_BASE = '/api';
 const api = {
     // Helper to get auth headers
     getHeaders() {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         return {
             'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` })
@@ -114,19 +114,35 @@ const api = {
     },
 
     async createProduct(productData) {
+        const isFormData = productData instanceof FormData;
+        const token = sessionStorage.getItem('token');
+        const headers = isFormData ? {} : this.getHeaders();
+        
+        if (isFormData && token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE}/products`, {
             method: 'POST',
-            headers: this.getHeaders(),
-            body: JSON.stringify(productData)
+            headers: headers,
+            body: isFormData ? productData : JSON.stringify(productData)
         });
         return this.handleResponse(response);
     },
 
     async updateProduct(id, productData) {
+        const isFormData = productData instanceof FormData;
+        const token = sessionStorage.getItem('token');
+        const headers = isFormData ? {} : this.getHeaders();
+        
+        if (isFormData && token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE}/products/${id}`, {
             method: 'PATCH',
-            headers: this.getHeaders(),
-            body: JSON.stringify(productData)
+            headers: headers,
+            body: isFormData ? productData : JSON.stringify(productData)
         });
         return this.handleResponse(response);
     },
@@ -266,6 +282,36 @@ const api = {
     async markAsDelivered(orderId) {
         const response = await fetch(`${API_BASE}/orders/${orderId}/delivered`, {
             method: 'PATCH',
+            headers: this.getHeaders()
+        });
+        return this.handleResponse(response);
+    },
+
+    async updateDeliveryLocation(locationData) {
+        const response = await fetch(`${API_BASE}/orders/delivery/location`, {
+            method: 'PATCH',
+            headers: this.getHeaders(),
+            body: JSON.stringify(locationData)
+        });
+        return this.handleResponse(response);
+    },
+
+    async getDeliveryLocation() {
+        const response = await fetch(`${API_BASE}/orders/delivery/location`, {
+            headers: this.getHeaders()
+        });
+        return this.handleResponse(response);
+    },
+
+    async getOrderLocation(orderId) {
+        const response = await fetch(`${API_BASE}/orders/${orderId}/location`, {
+            headers: this.getHeaders()
+        });
+        return this.handleResponse(response);
+    },
+
+    async getOrder(orderId) {
+        const response = await fetch(`${API_BASE}/orders/${orderId}`, {
             headers: this.getHeaders()
         });
         return this.handleResponse(response);

@@ -32,8 +32,13 @@
 
     <main class="dashboard-container">
         <div class="dashboard-header">
-            <h1>Welcome, <span id="userName">User</span>!</h1>
-            <div class="user-role" id="userRole">Role</div>
+            <div>
+                <h1>Welcome, <span id="userName">User</span>!</h1>
+                <div class="user-role" id="userRole">Role</div>
+            </div>
+            <div class="dashboard-hero-block">
+                <img src="/images/ui/dashboard-illustration.svg" alt="Dashboard overview illustration">
+            </div>
         </div>
 
         <!-- Customer View -->
@@ -247,7 +252,9 @@
                     <input type="tel" id="phone" name="phone" placeholder="254712345678" required aria-describedby="phone-hint">
                     <span id="phone-hint" class="field-hint">Enter the phone number registered with M-Pesa</span>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Simulate STK Push</button>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-block" data-tooltip="Send payment request via M-Pesa">Simulate STK Push</button>
+                </div>
             </form>
         </div>
     </div>
@@ -264,7 +271,9 @@
                         <option value="">Select delivery person</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Assign selected delivery person">Assign</button>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-block" data-tooltip="Assign selected delivery person">Assign</button>
+                </div>
             </form>
         </div>
     </div>
@@ -279,17 +288,5 @@
     <script src="/js/cart.js"></script>
     <script src="/js/dashboard.js"></script>
     <script src="/js/app.js"></script>
-    <script>
-        // Show toast notification
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast show ${type}`;
-            
-            setTimeout(() => {
-                toast.className = 'toast';
-            }, 3000);
-        }
-    </script>
 </body>
 </html>

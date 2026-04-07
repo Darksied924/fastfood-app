@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd266" />
+      <stop offset="100%" stop-color="#ff6b35" />
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff3d7" />
+      <stop offset="100%" stop-color="#ffc87c" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" rx="36" fill="#ffe6c3" />
+  <path d="M120 220 C90 220 70 190 70 160 C70 130 100 110 130 110 H210 C260 110 280 160 240 190 C220 210 165 220 120 220 Z" fill="#ffb94a" />
+  <path d="M335 240 C300 240 280 200 300 175 C330 140 380 125 420 145 C460 165 460 220 430 245 C405 265 365 265 335 240 Z" fill="#ff7c4d" />
+  <circle cx="210" cy="155" r="36" fill="#fff" opacity="0.75" />
+  <circle cx="430" cy="120" r="26" fill="#fff" opacity="0.65" />
+  <path d="M100 280 L540 280 L540 320 L100 320 Z" fill="url(#g1)" opacity="0.9" />
+  <path d="M220 190 C220 180 240 170 260 170 C290 170 310 195 310 210 C310 225 290 245 260 245 C235 245 220 220 220 190 Z" fill="#fff" opacity="0.9" />
+  <path d="M360 155 C360 145 380 135 400 135 C430 135 450 160 450 175 C450 190 430 210 400 210 C375 210 360 185 360 155 Z" fill="#fff" />
+  <path d="M90 60 C130 35 190 38 230 70 C270 102 280 150 255 180 C230 210 175 195 145 160 C120 130 105 95 90 60 Z" fill="url(#g2)" opacity="0.85" />
+  <text x="120" y="80" font-family="Inter, Arial, sans-serif" font-size="32" fill="#262626">Fresh food,</text>
+  <text x="120" y="118" font-family="Inter, Arial, sans-serif" font-size="32" fill="#262626">fast delivery.</text>
+</svg>

@@ -16,16 +16,114 @@ const formatDateTime = (value) => {
 
 const formatMinutes = (value) => `${Number(value || 0).toFixed(2)} mins`;
 
+let deliveryUser = null;
+let trackingMap = null;
+let driverMarker = null;
+let locationWatchId = null;
+let lastSentLocation = null;
+
+function setLeafletDebugOverlay(message) {
+    const overlay = document.getElementById('leafletDebugOverlay');
+    if (!overlay) return;
+    overlay.textContent = message || '';
+    overlay.style.display = message ? 'block' : 'none';
+}
+
+async function ensureLeafletLoaded() {
+    setLeafletDebugOverlay('Checking Leaflet asset availability...');
+    if (typeof L !== 'undefined') {
+        setLeafletDebugOverlay('Leaflet is already available.');
+        return true;
+    }
+
+    const existingScript = document.querySelector('script[src*="leaflet"]');
+    if (existingScript) {
+        if (existingScript.readyState === 'complete' || existingScript.readyState === 'loaded') {
+            const loaded = typeof L !== 'undefined';
+            setLeafletDebugOverlay(loaded ? 'Leaflet loaded from existing script.' : 'Leaflet existing script has not finished loading yet.');
+            return loaded;
+        }
+
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                existingScript.removeEventListener('load', onLoad);
+                existingScript.removeEventListener('error', onError);
+                const loaded = typeof L !== 'undefined';
+                setLeafletDebugOverlay(loaded ? 'Leaflet loaded after waiting.' : 'Leaflet load timed out.');
+                resolve(loaded);
+            }, 15000);
+
+            const onLoad = () => {
+                clearTimeout(timeout);
+                setLeafletDebugOverlay('Leaflet loaded successfully.');
+                resolve(typeof L !== 'undefined');
+            };
+
+            const onError = () => {
+                clearTimeout(timeout);
+                setLeafletDebugOverlay('Leaflet script failed to load.');
+                resolve(false);
+            };
+
+            existingScript.addEventListener('load', onLoad);
+            existingScript.addEventListener('error', onError);
+        });
+    }
+
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.integrity = 'sha256-vZ7pZZUDam96Ca3XyJjz5W1KtJ5VZJriJO+o5s2Z1M4=';
+        script.crossOrigin = '';
+        script.onload = () => {
+            setLeafletDebugOverlay('Leaflet downloaded successfully.');
+            resolve(typeof L !== 'undefined');
+        };
+        script.onerror = () => {
+            setLeafletDebugOverlay('Leaflet script failed to download.');
+            resolve(false);
+        };
+        document.head.appendChild(script);
+
+        setTimeout(() => {
+            const loaded = typeof L !== 'undefined';
+            setLeafletDebugOverlay(loaded ? 'Leaflet loaded after timeout.' : 'Leaflet load timed out.');
+            resolve(loaded);
+        }, 15000);
+    });
+}
+
+function setupDeliverySocket() {
+    if (!window.socketClient || typeof window.socketClient.connect !== 'function') {
+        return;
+    }
+
+    window.socketClient.connect();
+    window.socketClient.on('deliveryAssigned', () => {
+        loadDashboard();
+    });
+    window.socketClient.on('orderStatusUpdated', (payload) => {
+        if (!deliveryUser || Number(payload.deliveryId) !== Number(deliveryUser.id)) {
+            return;
+        }
+        loadDashboard();
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     if (!auth.requireAuth() || !auth.requireRole('delivery')) return;
 
     const user = auth.getCurrentUser();
+    deliveryUser = user;
     const roleNode = document.getElementById('deliveryRole');
     if (user && roleNode) {
         roleNode.textContent = user.role.toUpperCase();
     }
 
     await loadDashboard();
+    await loadDriverLocation();
+    setupDeliverySocket();
+    await setupDeliveryTracking();
     refreshTimer = setInterval(loadDashboard, 30000);
 });
 
@@ -33,7 +131,159 @@ window.addEventListener('beforeunload', () => {
     if (refreshTimer) {
         clearInterval(refreshTimer);
     }
+
+    if (locationWatchId !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(locationWatchId);
+    }
 });
+
+async function initializeDeliveryMap() {
+    const mapContainer = document.getElementById('deliveryLocationMap');
+    const statusNode = document.getElementById('deliveryLocationStatus');
+    if (!mapContainer) {
+        if (statusNode) {
+            statusNode.textContent = 'Unable to initialize map container. Please refresh or contact support.';
+        }
+        return;
+    }
+
+    if (typeof L === 'undefined') {
+        if (statusNode) {
+            statusNode.textContent = 'Loading map assets...';
+        }
+        const loaded = await ensureLeafletLoaded();
+        if (!loaded || typeof L === 'undefined') {
+            if (statusNode) {
+                statusNode.textContent = 'Unable to initialize map. Please refresh or try again later.';
+            }
+            return;
+        }
+    }
+
+    mapContainer.style.width = '100%';
+    mapContainer.style.minHeight = '360px';
+    mapContainer.style.height = '360px';
+
+    if (!trackingMap) {
+        trackingMap = L.map('deliveryLocationMap', {
+            scrollWheelZoom: false,
+            zoomControl: true
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(trackingMap);
+
+        trackingMap.setView([1.2921, 36.8219], 12);
+
+        setTimeout(() => {
+            if (trackingMap && typeof trackingMap.invalidateSize === 'function') {
+                trackingMap.invalidateSize(true);
+            }
+            setLeafletDebugOverlay('Leaflet map initialized successfully.');
+        }, 200);
+    }
+}
+
+async function updateDeliveryMap(latitude, longitude) {
+    if (!trackingMap || typeof L === 'undefined') {
+        await initializeDeliveryMap();
+    }
+
+    if (!trackingMap) {
+        return;
+    }
+
+    const position = [latitude, longitude];
+
+    if (trackingMap && typeof trackingMap.invalidateSize === 'function') {
+        trackingMap.invalidateSize(true);
+    }
+
+    if (!driverMarker) {
+        driverMarker = L.marker(position).addTo(trackingMap);
+    } else {
+        driverMarker.setLatLng(position);
+    }
+
+    trackingMap.setView(position, 14, {
+        animate: true,
+        duration: 0.5
+    });
+
+    const statusNode = document.getElementById('deliveryLocationStatus');
+    if (statusNode) {
+        statusNode.textContent = `Current driver location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    }
+}
+
+async function sendDriverLocation(latitude, longitude) {
+    const locationSignature = `${latitude.toFixed(5)},${longitude.toFixed(5)}`;
+    if (lastSentLocation === locationSignature) {
+        return;
+    }
+
+    lastSentLocation = locationSignature;
+
+    try {
+        await api.updateDeliveryLocation({ latitude, longitude });
+    } catch (error) {
+        console.warn('Driver location update failed:', error.message || error);
+    }
+}
+
+async function setupDeliveryTracking() {
+    await initializeDeliveryMap();
+
+    if (!navigator.geolocation) {
+        const statusNode = document.getElementById('deliveryLocationStatus');
+        if (statusNode) {
+            statusNode.textContent = 'Geolocation is not supported by this browser.';
+        }
+        return;
+    }
+
+    const options = {
+        enableHighAccuracy: true,
+        maximumAge: 15000,
+        timeout: 15000
+    };
+
+    locationWatchId = navigator.geolocation.watchPosition(
+        async (position) => {
+            if (!position || !position.coords) {
+                return;
+            }
+
+            const { latitude, longitude } = position.coords;
+            await updateDeliveryMap(latitude, longitude);
+            await sendDriverLocation(latitude, longitude);
+        },
+        (error) => {
+            const statusNode = document.getElementById('deliveryLocationStatus');
+            if (statusNode) {
+                statusNode.textContent = `Location error: ${error.message || 'Unable to read location'}`;
+            }
+            console.warn('Geolocation watch error:', error);
+        },
+        options
+    );
+}
+
+async function loadDriverLocation() {
+    await initializeDeliveryMap();
+
+    try {
+        const response = await api.getDeliveryLocation();
+        const location = response.data;
+        if (location && location.latitude !== null && location.longitude !== null) {
+            await updateDeliveryMap(location.latitude, location.longitude);
+        }
+    } catch (error) {
+        console.warn('Unable to load last known driver location:', error.message || error);
+    }
+}
 
 async function loadDashboard() {
     try {

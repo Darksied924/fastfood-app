@@ -7,6 +7,11 @@ const {
   updateProductValidator,
   productIdValidator
 } = require('../middleware/products.validator');
+const { upload } = require('../utils/imageUpload.util');
+const {
+  handleProductImageUpload,
+  validateImageFile
+} = require('../middleware/imageUpload.middleware');
 
 const router = express.Router();
 
@@ -18,8 +23,24 @@ router.get('/:id', productIdValidator, validate, productsController.getProduct);
 router.use(protect);
 router.use(restrictTo('admin', 'manager'));
 
-router.post('/', createProductValidator, validate, productsController.createProduct);
-router.patch('/:id', updateProductValidator, validate, productsController.updateProduct);
+router.post(
+  '/',
+  upload.single('image'),
+  validateImageFile,
+  createProductValidator,
+  validate,
+  handleProductImageUpload,
+  productsController.createProduct
+);
+router.patch(
+  '/:id',
+  upload.single('image'),
+  validateImageFile,
+  updateProductValidator,
+  validate,
+  handleProductImageUpload,
+  productsController.updateProduct
+);
 router.delete('/:id', productIdValidator, validate, productsController.deleteProduct);
 router.patch('/:id/toggle-availability', productIdValidator, validate, productsController.toggleAvailability);
 

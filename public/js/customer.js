@@ -20,6 +20,13 @@ const formatDateTime = (value) => {
     });
 };
 
+function setLeafletDebugOverlay(message) {
+    const overlay = document.getElementById('leafletDebugOverlay');
+    if (!overlay) return;
+    overlay.textContent = message || '';
+    overlay.style.display = message ? 'block' : 'none';
+}
+
 function getPaymentState(order) {
     if (!order || order.status !== 'pending' || !order.payment_in_progress || !order.payment_expires_at) {
         return { active: false, label: '' };
@@ -239,8 +246,8 @@ function getCancellationState(order) {
         return { eligible: false, timeLeftMs: 0, label: '' };
     }
 
-    const createdAt = new Date(order.created_at);
-    const elapsed = Date.now() - createdAt.getTime();
+    const paidAt = new Date(order.paid_at || order.created_at);
+    const elapsed = Date.now() - paidAt.getTime();
     const timeLeftMs = CANCELLATION_WINDOW_MS - elapsed;
 
     if (!Number.isFinite(timeLeftMs) || timeLeftMs <= 0) {
@@ -256,6 +263,28 @@ function getCancellationState(order) {
         label: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
     };
 }
+
+function isOrderTrackable(order) {
+    if (!order) {
+        return false;
+    }
+
+    if (order.status === 'out_for_delivery') {
+        return true;
+    }
+
+    if (order.status === 'paid' && !getCancellationState(order).eligible) {
+        return true;
+    }
+
+    return false;
+}
+
+function openTrackOrder(orderId) {
+    window.location.href = `/customer/track-order?orderId=${orderId}`;
+}
+
+window.openTrackOrder = openTrackOrder;
 
 function openCancelModal(orderId) {
     const order = customerOrdersCache[orderId];
@@ -366,6 +395,11 @@ async function loadCustomerPageContent() {
         return;
     }
 
+    if (document.getElementById('orderTrackingPage')) {
+        await loadTrackOrderPage();
+        return;
+    }
+
     if (document.getElementById('customer-products')) {
         await loadCustomerProducts();
     }
@@ -403,7 +437,9 @@ async function loadCustomerProducts() {
 
         container.innerHTML = products.map(product => `
             <div class="product-card">
-                <div class="product-image">${product.image || '🍔'}</div>
+                <div class="product-image">
+                    ${product.image ? `<img src="${product.image}" alt="${product.name}" loading="lazy">` : '🍔'}
+                </div>
                 <h3>${product.name}</h3>
                 <div class="product-price">${formatKsh(product.price)}</div>
                 <button class="btn btn-primary" onclick="cart.addItem(${JSON.stringify(product).replace(/"/g, '&quot;')})">
@@ -478,12 +514,18 @@ async function loadCustomerOrders() {
                             class="btn btn-danger"
                             data-cancel-button
                             data-order-id="${order.id}"
-                            data-expires-at="${new Date(order.created_at).getTime() + CANCELLATION_WINDOW_MS}"
+                            data-expires-at="${new Date(order.paid_at || order.created_at).getTime() + CANCELLATION_WINDOW_MS}"
                             onclick="requestOrderCancellation(${order.id})">
                             Cancel Order
                         </button>
-                    ` : ''}
-                </div>
+                    ` : ''}                    ${!getCancellationState(order).eligible && isOrderTrackable(order) ? `
+                        <button
+                            class="btn btn-primary"
+                            data-track-button
+                            onclick="openTrackOrder(${order.id})">
+                            Track Order
+                        </button>
+                    ` : ''}                </div>
             </div>
         `).join('');
 
@@ -557,6 +599,226 @@ function renderCancellationPageUnavailable(message) {
                 element.disabled = true;
             }
         });
+    }
+}
+
+function renderTrackPageUnavailable(message) {
+    const status = document.getElementById('orderTrackingStatus');
+    const details = document.getElementById('trackingOrderDetails');
+    const map = document.getElementById('orderTrackingMap');
+
+    if (status) {
+        status.textContent = message;
+        status.className = 'map-status';
+    }
+
+    if (details) {
+        details.innerHTML = `<p>${message}</p>`;
+    }
+
+    if (map) {
+        map.innerHTML = '<p style="padding:1rem;">Live tracking is not available for this order.</p>';
+    }
+}
+
+async function ensureLeafletLoaded() {
+    if (typeof L !== 'undefined') {
+        return true;
+    }
+
+    const existingScript = document.querySelector('script[src*="leaflet"]');
+    if (existingScript) {
+        if (existingScript.readyState === 'complete' || existingScript.readyState === 'loaded') {
+            return typeof L !== 'undefined';
+        }
+
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                existingScript.removeEventListener('load', onLoad);
+                existingScript.removeEventListener('error', onError);
+                resolve(typeof L !== 'undefined');
+            }, 15000);
+
+            const onLoad = () => {
+                clearTimeout(timeout);
+                resolve(typeof L !== 'undefined');
+            };
+
+            const onError = () => {
+                clearTimeout(timeout);
+                resolve(false);
+            };
+
+            existingScript.addEventListener('load', onLoad);
+            existingScript.addEventListener('error', onError);
+        });
+    }
+
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.integrity = 'sha256-vZ7pZZUDam96Ca3XyJjz5W1KtJ5VZJriJO+o5s2Z1M4=';
+        script.crossOrigin = '';
+        script.onload = () => resolve(typeof L !== 'undefined');
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+
+        setTimeout(() => {
+            resolve(typeof L !== 'undefined');
+        }, 15000);
+    });
+}
+
+async function initializeOrderTrackingMap() {
+    const mapContainer = document.getElementById('orderTrackingMap');
+    if (!mapContainer) {
+        return null;
+    }
+
+    if (typeof L === 'undefined') {
+        const loaded = await ensureLeafletLoaded();
+        if (!loaded || typeof L === 'undefined') {
+            return null;
+        }
+    }
+
+    const map = L.map('orderTrackingMap', {
+        scrollWheelZoom: false,
+        zoomControl: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+    }).addTo(map);
+
+    map.setView([1.2921, 36.8219], 12);
+    if (typeof map.invalidateSize === 'function') {
+        setTimeout(() => map.invalidateSize(true), 200);
+    }
+    setLeafletDebugOverlay('Leaflet map initialized successfully.');
+    return map;
+}
+
+function updateOrderTrackingMap(map, marker, latitude, longitude) {
+    if (!map || latitude == null || longitude == null || typeof L === 'undefined') {
+        return marker;
+    }
+
+    if (typeof map.invalidateSize === 'function') {
+        map.invalidateSize(true);
+    }
+
+    const position = [latitude, longitude];
+
+    if (!marker) {
+        marker = L.marker(position).addTo(map);
+    } else {
+        marker.setLatLng(position);
+    }
+
+    map.setView(position, 14, {
+        animate: true,
+        duration: 0.5
+    });
+
+    return marker;
+}
+
+function setOrderTrackingStatus(message) {
+    const status = document.getElementById('orderTrackingStatus');
+    if (status) {
+        status.textContent = message;
+    }
+}
+
+async function setupTrackPageSocket(orderId, mapState) {
+    if (!window.socketClient || typeof window.socketClient.connect !== 'function') {
+        return;
+    }
+
+    window.socketClient.connect();
+    window.socketClient.on('driverLocationUpdated', (payload) => {
+        if (!payload || Number(payload.orderId) !== Number(orderId)) {
+            return;
+        }
+
+        setOrderTrackingStatus(`Driver live location updated at ${new Date(payload.locationTime).toLocaleTimeString()}`);
+        mapState.marker = updateOrderTrackingMap(mapState.map, mapState.marker, payload.latitude, payload.longitude);
+    });
+}
+
+async function loadTrackOrderPage() {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = Number(params.get('orderId'));
+
+    if (!orderId) {
+        renderTrackPageUnavailable('Order ID is missing from the URL.');
+        return;
+    }
+
+    try {
+        const response = await api.getMyOrders();
+        const orders = response.data;
+        customerOrdersCache = orders.reduce((acc, order) => {
+            acc[order.id] = order;
+            return acc;
+        }, {});
+
+        let order = customerOrdersCache[orderId];
+        if (!order) {
+            const directOrderResponse = await api.getOrder(orderId);
+            order = directOrderResponse.data;
+            if (!order) {
+                renderTrackPageUnavailable('We could not find this order in your account.');
+                return;
+            }
+            customerOrdersCache[order.id] = order;
+        }
+
+        document.getElementById('trackingOrderReference').textContent = `#${order.id}`;
+        document.getElementById('trackingOrderStatus').textContent = order.status;
+        document.getElementById('trackingOrderTotal').textContent = order.total != null ? formatKsh(order.total) : 'N/A';
+        document.getElementById('trackingOrderAddress').textContent = order.delivery_address || 'Not available';
+        document.getElementById('trackingOrderDate').textContent = formatDateTime(order.created_at);
+        document.getElementById('trackingOrderPayment').textContent = order.payment_in_progress
+            ? `Payment pending — completes by ${formatDateTime(order.payment_expires_at)}`
+            : (order.paid_at
+                ? `Paid at ${formatDateTime(order.paid_at)}`
+                : (order.status === 'paid' ? 'Paid' : 'Not paid yet'));
+        document.getElementById('trackingDriverId').textContent = order.delivery_name || (order.delivery_id ? `Driver #${order.delivery_id}` : 'Not assigned');
+        document.getElementById('trackingOrderItems').innerHTML = (order.items || []).map((item) => `
+            <li>${item.product_name} x${item.quantity} — ${formatKsh((item.price || 0) * item.quantity)}</li>
+        `).join('');
+
+        const mapState = {
+            map: await initializeOrderTrackingMap(),
+            marker: null
+        };
+
+        setOrderTrackingStatus('Loading latest driver location...');
+
+        const locationResponse = await api.getOrderLocation(orderId);
+        const locationPayload = locationResponse.data || {};
+        const location = locationPayload.location;
+
+        if (!order.delivery_name && locationPayload.deliveryName) {
+            document.getElementById('trackingDriverId').textContent = locationPayload.deliveryName;
+        }
+
+        if (location && location.latitude !== null && location.longitude !== null) {
+            mapState.marker = updateOrderTrackingMap(mapState.map, mapState.marker, location.latitude, location.longitude);
+            setOrderTrackingStatus(`Driver last seen at ${new Date(location.locationTime).toLocaleTimeString()}`);
+        } else if (order.delivery_id) {
+            setOrderTrackingStatus('Driver assigned, live location will appear once the driver starts moving.');
+        } else {
+            setOrderTrackingStatus('No driver has been assigned yet. Please wait for assignment.');
+        }
+
+        await setupTrackPageSocket(orderId, mapState);
+    } catch (error) {
+        console.error('Failed to load tracking page:', error);
+        renderTrackPageUnavailable('Unable to load live tracking for this order at the moment.');
     }
 }
 

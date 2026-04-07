@@ -43,6 +43,7 @@ router.get('/analytics', restrictTo('admin', 'manager'), ordersController.getAna
 router.get('/analytics/export', restrictTo('admin'), ordersController.exportAnalyticsCsv);
 router.post('/:id/override-cancel', restrictTo('admin'), adminOverrideCancelValidator, validate, orderCancellationController.adminOverrideCancel);
 router.patch('/refunds/:id/review', restrictTo('admin'), refundReviewValidator, validate, orderCancellationController.reviewRefundRequest);
+router.get('/:id/location', orderIdValidator, validate, ordersController.getOrderLocation);
 router.get('/:id', orderIdValidator, validate, ordersController.getOrder);
 
 router.patch('/:id/status', restrictTo('admin', 'manager'), updateOrderStatusValidator, validate, ordersController.updateOrderStatus);
@@ -51,6 +52,8 @@ router.post('/:id/assign', restrictTo('admin', 'manager'), assignDeliveryValidat
 // Delivery routes
 router.get('/delivery/assigned', restrictTo('delivery'), ordersController.getAssignedOrders);
 router.get('/delivery/dashboard', restrictTo('delivery'), ordersController.getDeliveryDashboard);
+router.get('/delivery/location', restrictTo('delivery'), ordersController.getDeliveryLocation);
+router.patch('/delivery/location', restrictTo('delivery'), ordersController.updateDeliveryLocation);
 router.patch('/:id/delivered', restrictTo('delivery'), orderIdValidator, validate, ordersController.markAsDelivered);
 
 module.exports = router;

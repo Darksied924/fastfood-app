@@ -2,24 +2,24 @@
 const auth = {
     // Check if user is logged in
     isAuthenticated() {
-        return !!localStorage.getItem('token');
+        return !!sessionStorage.getItem('token');
     },
 
     // Get current user
     getCurrentUser() {
-        const userStr = localStorage.getItem('user');
+        const userStr = sessionStorage.getItem('user');
         return userStr ? JSON.parse(userStr) : null;
     },
 
     // Get auth token
     getToken() {
-        return localStorage.getItem('token');
+        return sessionStorage.getItem('token');
     },
 
     // Set user data after login
     setUserData(userData) {
-        localStorage.setItem('token', userData.token);
-        localStorage.setItem('user', JSON.stringify({
+        sessionStorage.setItem('token', userData.token);
+        sessionStorage.setItem('user', JSON.stringify({
             id: userData.id,
             name: userData.name,
             email: userData.email,
@@ -33,7 +33,7 @@ const auth = {
         const existingUser = this.getCurrentUser();
         if (!existingUser) return;
 
-        localStorage.setItem('user', JSON.stringify({
+        sessionStorage.setItem('user', JSON.stringify({
             ...existingUser,
             ...userData
         }));
@@ -41,9 +41,9 @@ const auth = {
 
     // Logout
     logout() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('cart'); // Clear cart on logout
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('cart'); // Clear cart on logout
         window.location.href = '/';
     },
 

@@ -139,17 +139,6 @@
             renderProducts(filtered);
         }
 
-        // Toast notification
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast show ${type}`;
-            
-            setTimeout(() => {
-                toast.className = 'toast';
-            }, 3000);
-        }
-
         // Make functions globally available
         window.toggleAvailability = toggleAvailability;
         window.filterProducts = filterProducts;

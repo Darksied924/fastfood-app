@@ -994,6 +994,16 @@ main {
     padding: 1.5rem;
     background: linear-gradient(45deg, #f5f5f5, #fff);
     border-bottom: 3px solid var(--secondary-yellow);
+    display: grid;
+    place-items: center;
+}
+
+.product-image img {
+    width: 100%;
+    height: auto;
+    max-height: 240px;
+    object-fit: cover;
+    border-radius: 0;
 }
 
 .product-card h3 {
@@ -1098,6 +1108,57 @@ main {
     text-align: center;
     color: #666;
     margin-bottom: 2rem;
+}
+
+.auth-hero-image,
+.page-hero-image,
+.dashboard-hero-block {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: center;
+}
+
+.auth-hero-image img,
+.page-hero-image img,
+.dashboard-hero-block img {
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    object-fit: contain;
+    border-radius: 24px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+}
+
+.dashboard-header {
+    background: linear-gradient(135deg, var(--primary-red), var(--secondary-yellow));
+    color: white;
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+    gap: 1.5rem;
+}
+
+.dashboard-header .dashboard-hero-block {
+    flex: 0 0 260px;
+}
+
+.dashboard-header h1 {
+    font-size: 1.8rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-header .user-role {
+    background: rgba(255, 255, 255, 0.25);
+    padding: 0.5rem 1.5rem;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .form-group {
@@ -1800,8 +1861,48 @@ tr:hover {
     padding: 2rem;
     border-radius: var(--border-radius);
     max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
     position: relative;
     animation: slideIn 0.3s ease;
+}
+
+.modal-content::-webkit-scrollbar {
+    width: 10px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+}
+
+.modal-content .form-actions,
+.modal-content .refund-review-actions,
+.modal-content .clear-cart-actions,
+.modal-content .user-action-buttons,
+.modal-content .delete-confirm-actions,
+.modal-content .review-decision-actions {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    z-index: 5;
+    width: 100%;
+    background: inherit;
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.modal-content .form-actions > *,
+.modal-content .refund-review-actions > *,
+.modal-content .clear-cart-actions > *,
+.modal-content .user-action-buttons > *,
+.modal-content .delete-confirm-actions > *,
+.modal-content .review-decision-actions > * {
+    flex: 1 1 180px;
 }
 
 @keyframes slideIn {
@@ -2527,6 +2628,30 @@ footer {
     padding-bottom: 0.5rem;
     border-bottom: 2px solid var(--secondary-yellow);
     font-size: 1.2rem;
+}
+
+.map-container {
+    width: 100%;
+    min-height: 360px;
+    height: 360px;
+}
+
+.debug-overlay {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 9999;
+    max-width: 320px;
+    padding: 0.85rem 1rem;
+    border-radius: 1rem;
+    background: rgba(18, 18, 18, 0.88);
+    color: #f5f5f5;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.32);
+    pointer-events: none;
+    display: none;
+    overflow-wrap: break-word;
 }
 
 .role-user-section {
@@ -5058,9 +5183,31 @@ body.admin-orders-page {
     border-radius: 24px;
     width: 90%;
     max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
     box-shadow: var(--shadow-lg);
     animation: modalSlideIn 0.3s ease-out;
     position: relative;
+}
+
+.admin-products-page .modal-content::-webkit-scrollbar {
+    width: 10px;
+}
+
+.admin-products-page .modal-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.admin-products-page .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.admin-products-page .form-actions .btn {
+    flex: 1 1 180px;
 }
 
 .admin-products-page .modal h3 {

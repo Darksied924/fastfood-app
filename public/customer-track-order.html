@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Order - CraveDash</title>
+    <meta name="description" content="Track your delivery order live with a map and order details.">
+    <meta name="author" content="CraveDash Kenya">
+    <meta name="theme-color" content="#ff6b35">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+4H1aZgE0U9bPgtYqXyZp1qSt4IaTfM5R9A9uP5S0=" crossorigin="" />
+    <style>
+        .order-tracking-card {
+            display: grid;
+            gap: 1rem;
+        }
+        .order-tracking-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .order-tracking-details-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        .order-tracking-summary-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        .map-container {
+            min-height: 360px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            overflow: hidden;
+        }
+        .tracking-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body class="customer-orders-page customer-track-page">
+    <header></header>
+
+    <main class="dashboard-container">
+        <div class="dashboard-header">
+            <div>
+                <h1>Track Your Order</h1>
+                <p class="subheading">Live driver location and order details in one place.</p>
+            </div>
+            <div class="tracking-actions">
+                <a href="/customer/orders" class="btn btn-secondary">Close</a>
+            </div>
+        </div>
+
+        <section id="orderTrackingPage" class="dashboard-card order-tracking-card">
+            <div class="order-tracking-topbar">
+                <div>
+                    <span class="eyebrow">Live Order Tracking</span>
+                    <h2 id="trackingOrderReference">Order #--</h2>
+                </div>
+                <div class="tracking-actions">
+                    <a href="/customer/menu" class="btn btn-secondary">Menu</a>
+                    <a href="/customer/orders" class="btn btn-secondary">My Orders</a>
+                </div>
+            </div>
+
+            <div id="trackingOrderDetails" class="order-tracking-details-grid"></div>
+
+            <div class="order-tracking-details-grid">
+                <article class="order-tracking-summary">
+                    <div class="order-tracking-row">
+                        <div>
+                            <small>Order status</small>
+                            <strong id="trackingOrderStatus">Loading...</strong>
+                        </div>
+                        <div>
+                            <small>Order total</small>
+                            <strong id="trackingOrderTotal">KSh 0</strong>
+                        </div>
+                    </div>
+                    <div class="order-tracking-row">
+                        <div>
+                            <small>Delivery address</small>
+                            <strong id="trackingOrderAddress">Loading...</strong>
+                        </div>
+                        <div>
+                            <small>Order placed</small>
+                            <strong id="trackingOrderDate">Loading...</strong>
+                        </div>
+                    </div>
+                    <div class="order-tracking-row">
+                        <div>
+                            <small>Payment</small>
+                            <strong id="trackingOrderPayment">Loading...</strong>
+                        </div>
+                        <div>
+                            <small>Delivery person</small>
+                            <strong id="trackingDriverId">Not assigned</strong>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="order-tracking-map-section">
+                    <div id="orderTrackingMap" class="map-container"></div>
+                    <p id="orderTrackingStatus" class="map-status">Loading live driver location...</p>
+                </article>
+            </div>
+
+            <section class="dashboard-card">
+                <h3>Order items</h3>
+                <ul id="trackingOrderItems" class="order-items-list"></ul>
+            </section>
+        </section>
+    </main>
+
+    <footer></footer>
+    <div id="leafletDebugOverlay" class="debug-overlay"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-vZ7pZZUDam96Ca3XyJjz5W1KtJ5VZJriJO+o5s2Z1M4=" crossorigin=""></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/socket.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/cart.js"></script>
+    <script src="/js/customer.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

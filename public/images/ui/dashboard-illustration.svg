@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <linearGradient id="b1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7ee0ff" />
+      <stop offset="100%" stop-color="#4b9cff" />
+    </linearGradient>
+    <linearGradient id="b2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#cce6ff" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" rx="32" fill="url(#b1)" />
+  <path d="M80 260 C120 205 210 180 290 195 C345 205 410 235 475 230 C520 227 560 250 560 280 L560 320 L80 320 Z" fill="url(#b2)" />
+  <circle cx="180" cy="140" r="40" fill="#fff" opacity="0.85" />
+  <circle cx="460" cy="115" r="32" fill="#fff" opacity="0.8" />
+  <path d="M190 220 C190 200 215 190 235 190 C270 190 280 225 250 245 C225 262 190 245 190 220 Z" fill="#ffe4b8" />
+  <path d="M360 200 C360 180 385 170 410 175 C435 180 450 205 435 230 C420 255 360 245 360 200 Z" fill="#ffd38c" />
+  <rect x="110" y="60" width="160" height="120" rx="22" fill="#fff" opacity="0.88" />
+  <rect x="385" y="60" width="135" height="95" rx="20" fill="#fff" opacity="0.88" />
+  <rect x="130" y="86" width="110" height="18" rx="9" fill="#4b9cff" />
+  <rect x="130" y="110" width="90" height="14" rx="7" fill="#7bbcff" opacity="0.9" />
+  <rect x="130" y="134" width="140" height="12" rx="6" fill="#7bbcff" opacity="0.75" />
+  <rect x="405" y="86" width="75" height="18" rx="9" fill="#4b9cff" />
+  <rect x="405" y="110" width="95" height="14" rx="7" fill="#7bbcff" opacity="0.9" />
+  <rect x="405" y="134" width="65" height="12" rx="6" fill="#7bbcff" opacity="0.75" />
+  <text x="130" y="54" font-family="Inter, Arial, sans-serif" font-size="32" fill="#fff">Live orders</text>
+</svg>

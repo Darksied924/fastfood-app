@@ -64,16 +64,23 @@
                     <span id="productPrice-hint" class="field-hint">Set the price in Kenyan Shillings</span>
                 </div>
                 <div class="form-group">
-                    <label for="productImage">Emoji</label>
-                    <input type="text" id="productImage" name="image" value="🍔" aria-describedby="productImage-hint">
-                    <span id="productImage-hint" class="field-hint">Choose an emoji to represent the dish</span>
+                    <label for="productImage">Product Image</label>
+                    <div style="margin-bottom: 1rem;">
+                        <input type="file" id="productImage" name="image" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="productImage-hint">
+                        <span id="productImage-hint" class="field-hint">Upload a JPG, PNG, WebP, or GIF image (max 5MB)</span>
+                    </div>
+                    <div id="imagePreview" style="display: none; margin-top: 1rem;">
+                        <img id="previewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 4px;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>
                         <input type="checkbox" name="available" checked> Available
                     </label>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" data-tooltip="Add this product to the menu">Create Product</button>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-block" data-tooltip="Add this product to the menu">Create Product</button>
+                </div>
             </form>
         </div>
     </div>
@@ -96,15 +103,22 @@
                     <input type="number" id="editProductPrice" name="price" step="1" min="1" required>
                 </div>
                 <div class="form-group">
-                    <label for="editProductImage">Emoji</label>
-                    <input type="text" id="editProductImage" name="image" value="🍔">
+                    <label for="editProductImage">Product Image</label>
+                    <div style="margin-bottom: 1rem;">
+                        <input type="file" id="editProductImage" name="image" accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="editProductImage-hint">
+                        <span id="editProductImage-hint" class="field-hint">Upload a new image (JPG, PNG, WebP, or GIF - max 5MB)</span>
+                    </div>
+                    <div id="editImagePreview" style="display: none; margin-top: 1rem;">
+                        <p>Current image:</p>
+                        <img id="editPreviewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 4px;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>
                         <input type="checkbox" id="editProductAvailable" name="available"> Available
                     </label>
                 </div>
-                <div style="display:flex; gap:0.6rem;">
+                <div class="form-actions">
                     <button type="submit" class="btn btn-primary btn-block" data-tooltip="Save changes to this product">Save Changes</button>
                     <button type="button" id="deleteSelectedProductBtn" class="btn btn-secondary btn-block" data-tooltip="Remove this product from the menu">Delete Product</button>
                 </div>

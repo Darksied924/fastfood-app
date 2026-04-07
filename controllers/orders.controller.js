@@ -3,7 +3,9 @@ const logger = require('../logger');
 const asyncHandler = require('../utils/asyncHandler');
 const { successResponse, errorResponse } = require('../utils/response.util');
 const orderService = require('../services/order.service');
+const locationService = require('../services/location.service');
 const config = require('../config');
+const { emitToUser, emitToDelivery, emitToRole } = require('../socket');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -90,8 +92,9 @@ const getMyOrders = asyncHandler(async (req, res) => {
   const paymentWindowMs = config.mpesa.stkPaymentWindowMs;
 
   const orders = await db.query(
-    `SELECT o.id, o.user_id, o.delivery_id, o.total, o.status, o.created_at, o.updated_at,
+    `SELECT o.id, o.user_id, o.delivery_id, o.total, o.status, o.delivery_address, o.created_at, o.updated_at,
             o.phone,
+            o.paid_at,
             o.checkout_request_id,
             d.name as delivery_name,
             (
@@ -311,6 +314,29 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 
   logger.info(`Order ${id} status updated to ${status} by ${userRole}:${userId}`);
 
+  emitToUser(order.user_id, 'orderStatusUpdated', {
+    orderId: Number(id),
+    status,
+    userId: order.user_id,
+    deliveryId: order.delivery_id || null
+  });
+
+  if (order.delivery_id) {
+    emitToDelivery(order.delivery_id, 'orderStatusUpdated', {
+      orderId: Number(id),
+      status,
+      userId: order.user_id,
+      deliveryId: order.delivery_id
+    });
+  }
+
+  if (status === 'paid') {
+    emitToUser(order.user_id, 'paymentConfirmed', {
+      orderId: Number(id),
+      status: 'paid'
+    });
+  }
+
   successResponse(res, null, 'Order status updated successfully');
 });
 
@@ -359,6 +385,20 @@ const assignDelivery = asyncHandler(async (req, res) => {
 
   logger.info(`Order ${id} assigned to delivery user ${deliveryId} and moved to ${nextStatus}`);
 
+  emitToDelivery(deliveryId, 'deliveryAssigned', {
+    orderId: Number(id),
+    status: nextStatus,
+    userId: orders[0].user_id,
+    deliveryId
+  });
+
+  emitToUser(orders[0].user_id, 'orderStatusUpdated', {
+    orderId: Number(id),
+    status: nextStatus,
+    userId: orders[0].user_id,
+    deliveryId
+  });
+
   successResponse(res, null, 'Delivery assigned successfully');
 });
 
@@ -374,7 +414,7 @@ const getAssignedOrders = asyncHandler(async (req, res) => {
             u.phone as customer_phone
      FROM orders o
      JOIN users u ON o.user_id = u.id
-     WHERE o.delivery_id = ? AND o.status = 'out_for_delivery'
+     WHERE o.delivery_id = ? AND o.status IN ('preparing', 'out_for_delivery')
      ORDER BY o.created_at DESC`,
     [deliveryId]
   );
@@ -426,6 +466,20 @@ const markAsDelivered = asyncHandler(async (req, res) => {
   );
 
   logger.info(`Order ${id} marked as delivered by delivery user ${deliveryId}`);
+
+  emitToDelivery(deliveryId, 'orderStatusUpdated', {
+    orderId: Number(id),
+    status: 'delivered',
+    userId: orders[0].user_id,
+    deliveryId
+  });
+
+  emitToUser(orders[0].user_id, 'orderStatusUpdated', {
+    orderId: Number(id),
+    status: 'delivered',
+    userId: orders[0].user_id,
+    deliveryId
+  });
 
   successResponse(res, null, 'Order marked as delivered');
 });
@@ -551,7 +605,7 @@ const getDeliveryDashboard = asyncHandler(async (req, res) => {
       FROM orders o
       JOIN users u ON u.id = o.user_id
       WHERE o.delivery_id = ?
-        AND o.status = 'out_for_delivery'
+        AND o.status IN ('preparing', 'out_for_delivery')
       ORDER BY o.updated_at DESC
     `,
     [deliveryId]
@@ -1401,6 +1455,103 @@ const getAnalytics = asyncHandler(async (req, res) => {
   successResponse(res, payload);
 });
 
+// @desc    Get latest driver location for current delivery user
+// @route   GET /api/orders/delivery/location
+const getDeliveryLocation = asyncHandler(async (req, res) => {
+  const location = await locationService.getDriverLocation(req.user.id);
+  successResponse(res, location || {
+    deliveryId: req.user.id,
+    orderId: null,
+    latitude: null,
+    longitude: null,
+    locationTime: null
+  });
+});
+
+// @desc    Get latest driver location for a specific order
+// @route   GET /api/orders/:id/location
+const getOrderLocation = asyncHandler(async (req, res) => {
+  const orderId = Number(req.params.id);
+  const orders = await db.query(
+    `SELECT o.id, o.user_id, o.delivery_id, o.status, d.name AS delivery_name
+     FROM orders o
+     LEFT JOIN users d ON o.delivery_id = d.id
+     WHERE o.id = ?`,
+    [orderId]
+  );
+
+  if (orders.length === 0) {
+    return errorResponse(res, 'Order not found', 404);
+  }
+
+  const order = orders[0];
+  const currentUser = req.user;
+
+  if (currentUser.role === 'customer' && Number(order.user_id) !== Number(currentUser.id)) {
+    return errorResponse(res, 'Not authorized to view this order location', 403);
+  }
+
+  if (currentUser.role === 'delivery' && Number(order.delivery_id) !== Number(currentUser.id)) {
+    return errorResponse(res, 'Not authorized to view this order location', 403);
+  }
+
+  if (!order.delivery_id) {
+    return successResponse(res, {
+      orderId: order.id,
+      orderStatus: order.status,
+      deliveryId: null,
+      deliveryName: null,
+      location: null
+    });
+  }
+
+  const location = await locationService.getDriverLocation(order.delivery_id);
+  const payload = {
+    orderId: order.id,
+    orderStatus: order.status,
+    deliveryId: order.delivery_id,
+    deliveryName: order.delivery_name || null,
+    location: location || null
+  };
+
+  return successResponse(res, payload);
+});
+
+// @desc    Update driver location from delivery app
+// @route   PATCH /api/orders/delivery/location
+const updateDeliveryLocation = asyncHandler(async (req, res) => {
+  const deliveryId = req.user.id;
+  const latitude = Number(req.body.latitude);
+  const longitude = Number(req.body.longitude);
+  const orderId = req.body.orderId ? Number(req.body.orderId) : null;
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return errorResponse(res, 'Valid latitude and longitude are required', 400);
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return errorResponse(res, 'Latitude or longitude values are out of range', 400);
+  }
+
+  const result = await locationService.saveDriverLocation(deliveryId, latitude, longitude, orderId);
+  const payload = {
+    deliveryId,
+    latitude,
+    longitude,
+    orderId: result.orderId,
+    locationTime: result.locationTime
+  };
+
+  if (result.customerId) {
+    emitToUser(result.customerId, 'driverLocationUpdated', payload);
+  }
+
+  emitToRole('manager', 'driverLocationUpdated', payload);
+  emitToRole('admin', 'driverLocationUpdated', payload);
+
+  successResponse(res, payload, 'Driver location updated successfully');
+});
+
 // @desc    Export analytics summary as CSV
 // @route   GET /api/orders/analytics/export
 const exportAnalyticsCsv = asyncHandler(async (req, res) => {
@@ -1440,6 +1591,9 @@ module.exports = {
   assignDelivery,
   getAssignedOrders,
   getDeliveryDashboard,
+  getDeliveryLocation,
+  getOrderLocation,
+  updateDeliveryLocation,
   markAsDelivered,
   getDeliveryPersonnel,
   getAnalytics,

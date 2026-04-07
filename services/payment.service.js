@@ -2,6 +2,7 @@ const db = require('../db');
 const logger = require('../logger');
 const orderService = require('./order.service');
 const mpesaService = require('./mpesa.service');
+const { emitToUser, emitToDelivery } = require('../socket');
 
 /**
  * Payment Service
@@ -280,6 +281,30 @@ class PaymentService {
                     status: newStatus,
                     receipt
                 });
+
+                if (isPaymentSuccess) {
+                    emitToUser(order.user_id, 'paymentConfirmed', {
+                        orderId: order.id,
+                        status: 'paid',
+                        receipt
+                    });
+
+                    emitToUser(order.user_id, 'orderStatusUpdated', {
+                        orderId: order.id,
+                        status: 'paid',
+                        userId: order.user_id,
+                        deliveryId: order.delivery_id || null
+                    });
+
+                    if (order.delivery_id) {
+                        emitToDelivery(order.delivery_id, 'orderStatusUpdated', {
+                            orderId: order.id,
+                            status: 'paid',
+                            userId: order.user_id,
+                            deliveryId: order.delivery_id
+                        });
+                    }
+                }
             }
 
             return {

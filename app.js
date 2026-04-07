@@ -135,6 +135,10 @@ app.get('/customer/cancel-order', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'customer-cancel-order.html'));
 });
 
+app.get('/customer/track-order', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'customer-track-order.html'));
+});
+
 app.get('/profile', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
