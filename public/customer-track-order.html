@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#ff6b35">
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+4H1aZgE0U9bPgtYqXyZp1qSt4IaTfM5R9A9uP5S0=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         .order-tracking-card {
             display: grid;
@@ -29,12 +29,6 @@
         .order-tracking-summary-grid {
             display: grid;
             gap: 1rem;
-        }
-        .map-container {
-            min-height: 360px;
-            border-radius: 12px;
-            border: 1px solid #ddd;
-            overflow: hidden;
         }
         .tracking-actions {
             display: flex;
@@ -109,6 +103,7 @@
                 <article class="order-tracking-map-section">
                     <div id="orderTrackingMap" class="map-container"></div>
                     <p id="orderTrackingStatus" class="map-status">Loading live driver location...</p>
+                    <p id="orderTrackingConnectionStatus" class="map-status">Connecting to live updates...</p>
                 </article>
             </div>
 
@@ -120,9 +115,7 @@
     </main>
 
     <footer></footer>
-    <div id="leafletDebugOverlay" class="debug-overlay"></div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-vZ7pZZUDam96Ca3XyJjz5W1KtJ5VZJriJO+o5s2Z1M4=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/socket.js"></script>
     <script src="/js/api.js"></script>

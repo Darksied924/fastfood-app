@@ -1,7 +1,14 @@
 let currentCustomer = null;
 let customerOrdersCache = {};
 let cancellationUiInterval = null;
+let trackOrderPollingInterval = null;
+let trackOrderSocketCleanup = [];
+let trackOrderSocketStatusCleanup = null;
+let activeTrackOrderState = null;
+let orderTrackingMapInstance = null;
+let orderTrackingMapBoundsInitialized = false;
 const CANCELLATION_WINDOW_MS = 5 * 60 * 1000;
+const TRACK_ORDER_POLL_INTERVAL_MS = 15000;
 const formatKsh = (amount) => `KSh ${Number(amount || 0).toLocaleString('en-KE', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
@@ -19,13 +26,6 @@ const formatDateTime = (value) => {
         minute: '2-digit'
     });
 };
-
-function setLeafletDebugOverlay(message) {
-    const overlay = document.getElementById('leafletDebugOverlay');
-    if (!overlay) return;
-    overlay.textContent = message || '';
-    overlay.style.display = message ? 'block' : 'none';
-}
 
 function getPaymentState(order) {
     if (!order || order.status !== 'pending' || !order.payment_in_progress || !order.payment_expires_at) {
@@ -269,15 +269,31 @@ function isOrderTrackable(order) {
         return false;
     }
 
+    return order.status === 'out_for_delivery' && Boolean(order.delivery_id);
+}
+
+function canViewOrderProgress(order) {
+    if (!order) {
+        return false;
+    }
+
+    if (order.status === 'cancelled' || order.status === 'delivered') {
+        return false;
+    }
+
     if (order.status === 'out_for_delivery') {
         return true;
     }
 
-    if (order.status === 'paid' && !getCancellationState(order).eligible) {
+    if ((order.status === 'paid' || order.status === 'preparing') && !getCancellationState(order).eligible) {
         return true;
     }
 
     return false;
+}
+
+function getOrderTrackingActionLabel(order) {
+    return isOrderTrackable(order) ? 'Track Order' : 'View Order Progress';
 }
 
 function openTrackOrder(orderId) {
@@ -518,12 +534,12 @@ async function loadCustomerOrders() {
                             onclick="requestOrderCancellation(${order.id})">
                             Cancel Order
                         </button>
-                    ` : ''}                    ${!getCancellationState(order).eligible && isOrderTrackable(order) ? `
+                    ` : ''}                    ${!getCancellationState(order).eligible && canViewOrderProgress(order) ? `
                         <button
                             class="btn btn-primary"
                             data-track-button
                             onclick="openTrackOrder(${order.id})">
-                            Track Order
+                            ${getOrderTrackingActionLabel(order)}
                         </button>
                     ` : ''}                </div>
             </div>
@@ -603,7 +619,10 @@ function renderCancellationPageUnavailable(message) {
 }
 
 function renderTrackPageUnavailable(message) {
+    clearTrackOrderRuntime();
+
     const status = document.getElementById('orderTrackingStatus');
+    const connection = document.getElementById('orderTrackingConnectionStatus');
     const details = document.getElementById('trackingOrderDetails');
     const map = document.getElementById('orderTrackingMap');
 
@@ -616,73 +635,34 @@ function renderTrackPageUnavailable(message) {
         details.innerHTML = `<p>${message}</p>`;
     }
 
+    if (connection) {
+        connection.textContent = 'Live updates unavailable for this order.';
+    }
+
     if (map) {
         map.innerHTML = '<p style="padding:1rem;">Live tracking is not available for this order.</p>';
     }
 }
 
-async function ensureLeafletLoaded() {
-    if (typeof L !== 'undefined') {
-        return true;
-    }
-
-    const existingScript = document.querySelector('script[src*="leaflet"]');
-    if (existingScript) {
-        if (existingScript.readyState === 'complete' || existingScript.readyState === 'loaded') {
-            return typeof L !== 'undefined';
-        }
-
-        return new Promise((resolve) => {
-            const timeout = setTimeout(() => {
-                existingScript.removeEventListener('load', onLoad);
-                existingScript.removeEventListener('error', onError);
-                resolve(typeof L !== 'undefined');
-            }, 15000);
-
-            const onLoad = () => {
-                clearTimeout(timeout);
-                resolve(typeof L !== 'undefined');
-            };
-
-            const onError = () => {
-                clearTimeout(timeout);
-                resolve(false);
-            };
-
-            existingScript.addEventListener('load', onLoad);
-            existingScript.addEventListener('error', onError);
-        });
-    }
-
-    return new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.integrity = 'sha256-vZ7pZZUDam96Ca3XyJjz5W1KtJ5VZJriJO+o5s2Z1M4=';
-        script.crossOrigin = '';
-        script.onload = () => resolve(typeof L !== 'undefined');
-        script.onerror = () => resolve(false);
-        document.head.appendChild(script);
-
-        setTimeout(() => {
-            resolve(typeof L !== 'undefined');
-        }, 15000);
-    });
-}
-
-async function initializeOrderTrackingMap() {
+function initMap() {
     const mapContainer = document.getElementById('orderTrackingMap');
     if (!mapContainer) {
+        console.error('Map container missing');
         return null;
     }
 
-    if (typeof L === 'undefined') {
-        const loaded = await ensureLeafletLoaded();
-        if (!loaded || typeof L === 'undefined') {
-            return null;
-        }
+    if (orderTrackingMapInstance) {
+        return orderTrackingMapInstance;
     }
 
-    const map = L.map('orderTrackingMap', {
+    if (typeof L === 'undefined') {
+        console.error('Leaflet not loaded');
+        mapContainer.innerHTML = '<p style="padding:1rem;">Map failed to load. Live text updates will continue.</p>';
+        setOrderTrackingConnectionStatus('Map failed to load, but live order updates are still active.');
+        return null;
+    }
+
+    orderTrackingMapInstance = L.map(mapContainer, {
         scrollWheelZoom: false,
         zoomControl: true
     });
@@ -690,39 +670,253 @@ async function initializeOrderTrackingMap() {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 18
-    }).addTo(map);
+    }).addTo(orderTrackingMapInstance);
 
-    map.setView([1.2921, 36.8219], 12);
-    if (typeof map.invalidateSize === 'function') {
-        setTimeout(() => map.invalidateSize(true), 200);
-    }
-    setLeafletDebugOverlay('Leaflet map initialized successfully.');
-    return map;
+    orderTrackingMapInstance.setView([1.2921, 36.8219], 12);
+    return orderTrackingMapInstance;
 }
 
-function updateOrderTrackingMap(map, marker, latitude, longitude) {
-    if (!map || latitude == null || longitude == null || typeof L === 'undefined') {
-        return marker;
+function createDeliveryMarkerIcon(isPrimary = false) {
+    if (typeof L === 'undefined' || typeof L.divIcon !== 'function') {
+        return undefined;
     }
 
-    if (typeof map.invalidateSize === 'function') {
-        map.invalidateSize(true);
+    const size = isPrimary ? 18 : 14;
+    const halo = isPrimary ? 34 : 28;
+    const color = isPrimary ? '#d62828' : '#1d3557';
+
+    return L.divIcon({
+        className: 'live-delivery-marker',
+        html: `
+            <span style="
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: ${size}px;
+                height: ${size}px;
+                border-radius: 999px;
+                background: ${color};
+                border: 3px solid #fff;
+                box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+            ">
+                <span style="
+                    position: absolute;
+                    width: ${halo}px;
+                    height: ${halo}px;
+                    border-radius: 999px;
+                    background: rgba(214, 40, 40, 0.14);
+                "></span>
+            </span>
+        `,
+        iconSize: [halo, halo],
+        iconAnchor: [halo / 2, halo / 2],
+        popupAnchor: [0, -(halo / 2)]
+    });
+}
+
+function buildTrackingPopupContent(trackingEntry) {
+    const deliveryName = trackingEntry.deliveryName || `Driver #${trackingEntry.deliveryId ?? '--'}`;
+    const deliveryId = trackingEntry.deliveryId ?? '--';
+    const orderId = trackingEntry.orderId ?? '--';
+    const statusLabel = trackingEntry.statusLabel || 'Tracking live';
+    const etaLabel = trackingEntry.etaLabel || 'ETA unavailable';
+    const destination = trackingEntry.assignedDestination || 'Not available';
+    const lastSeen = trackingEntry.locationTime ? formatTrackingTime(trackingEntry.locationTime) : 'Waiting for GPS';
+
+    return `
+        <div class="delivery-popup-card" style="min-width: 220px;">
+            <strong>${deliveryName}</strong>
+            <p style="margin: 0.5rem 0 0;">Delivery ID: ${deliveryId}</p>
+            <p style="margin: 0.2rem 0 0;">Order ID: ${orderId}</p>
+            <p style="margin: 0.2rem 0 0;">Status: ${statusLabel}</p>
+            <p style="margin: 0.2rem 0 0;">ETA: ${etaLabel}</p>
+            <p style="margin: 0.2rem 0 0;">Destination: ${destination}</p>
+            <p style="margin: 0.2rem 0 0;">Last seen: ${lastSeen}</p>
+        </div>
+    `;
+}
+
+function animateMarkerTo(marker, latitude, longitude) {
+    if (!marker || latitude == null || longitude == null || typeof L === 'undefined') {
+        return;
     }
 
-    const position = [latitude, longitude];
+    const target = L.latLng(latitude, longitude);
+    const current = typeof marker.getLatLng === 'function' ? marker.getLatLng() : target;
 
-    if (!marker) {
-        marker = L.marker(position).addTo(map);
-    } else {
-        marker.setLatLng(position);
+    if (!current) {
+        marker.setLatLng(target);
+        return;
     }
 
-    map.setView(position, 14, {
-        animate: true,
-        duration: 0.5
+    const distance = typeof current.distanceTo === 'function' ? current.distanceTo(target) : 0;
+    if (!Number.isFinite(distance) || distance < 0.5) {
+        marker.setLatLng(target);
+        return;
+    }
+
+    if (marker.__trackingAnimationFrame) {
+        cancelAnimationFrame(marker.__trackingAnimationFrame);
+    }
+
+    const duration = Math.max(250, Math.min(1200, distance * 12));
+    const startedAt = performance.now();
+    const origin = L.latLng(current.lat, current.lng);
+
+    const tick = (now) => {
+        const elapsed = now - startedAt;
+        const progress = Math.min(1, elapsed / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const nextLat = origin.lat + ((target.lat - origin.lat) * eased);
+        const nextLng = origin.lng + ((target.lng - origin.lng) * eased);
+
+        marker.setLatLng([nextLat, nextLng]);
+
+        if (progress < 1) {
+            marker.__trackingAnimationFrame = requestAnimationFrame(tick);
+            return;
+        }
+
+        marker.__trackingAnimationFrame = null;
+    };
+
+    marker.__trackingAnimationFrame = requestAnimationFrame(tick);
+}
+
+function getTrackingEntries(trackState, locationPayload = {}) {
+    if (Array.isArray(locationPayload.trackedPersonnel) && locationPayload.trackedPersonnel.length) {
+        return locationPayload.trackedPersonnel;
+    }
+
+    const location = locationPayload.location;
+    if (!location || location.latitude == null || location.longitude == null) {
+        return [];
+    }
+
+    return [{
+        deliveryId: locationPayload.deliveryId || trackState.order?.delivery_id || null,
+        deliveryName: locationPayload.deliveryName || trackState.order?.delivery_name || null,
+        orderId: locationPayload.orderId || trackState.orderId,
+        status: locationPayload.trackingStatus || 'en_route',
+        statusLabel: locationPayload.statusLabel || 'En route',
+        etaLabel: locationPayload.etaLabel || 'ETA updating live',
+        assignedDestination: locationPayload.assignedDestination || trackState.order?.delivery_address || 'Not available',
+        latitude: location.latitude,
+        longitude: location.longitude,
+        locationTime: location.locationTime || null
+    }];
+}
+
+function shouldRecenterTrackingMap(map, latitude, longitude) {
+    if (!map || latitude == null || longitude == null || typeof map.getBounds !== 'function' || typeof L === 'undefined') {
+        return false;
+    }
+
+    const bounds = map.getBounds();
+    if (!bounds || typeof bounds.pad !== 'function' || typeof bounds.contains !== 'function') {
+        return false;
+    }
+
+    return !bounds.pad(-0.3).contains(L.latLng(latitude, longitude));
+}
+
+function shouldRefitTrackingBounds(map, positions = []) {
+    if (!map || typeof map.getBounds !== 'function' || typeof L === 'undefined' || positions.length < 2) {
+        return false;
+    }
+
+    const bounds = map.getBounds();
+    if (!bounds || typeof bounds.pad !== 'function' || typeof bounds.contains !== 'function') {
+        return false;
+    }
+
+    const paddedBounds = bounds.pad(-0.2);
+    return positions.some(([latitude, longitude]) => !paddedBounds.contains(L.latLng(latitude, longitude)));
+}
+
+function syncTrackedPersonnelMarkers(trackState, trackingEntries = []) {
+    if (!trackState?.mapState?.map || typeof L === 'undefined') {
+        return null;
+    }
+
+    if (!trackState.mapState.markers) {
+        trackState.mapState.markers = new Map();
+    }
+
+    const markers = trackState.mapState.markers;
+    const nextIds = new Set();
+    const validEntries = trackingEntries.filter((entry) => entry && entry.latitude != null && entry.longitude != null);
+
+    validEntries.forEach((entry, index) => {
+        const markerKey = String(entry.deliveryId || entry.orderId || index);
+        nextIds.add(markerKey);
+
+        const existingRecord = markers.get(markerKey);
+        const icon = createDeliveryMarkerIcon(index === 0);
+
+        if (!existingRecord) {
+            const marker = L.marker([entry.latitude, entry.longitude], icon ? { icon } : undefined).addTo(trackState.mapState.map);
+            marker.bindPopup(buildTrackingPopupContent(entry));
+            markers.set(markerKey, { marker, entry });
+            return;
+        }
+
+        if (icon && typeof existingRecord.marker.setIcon === 'function') {
+            existingRecord.marker.setIcon(icon);
+        }
+
+        animateMarkerTo(existingRecord.marker, entry.latitude, entry.longitude);
+        existingRecord.marker.bindPopup(buildTrackingPopupContent(entry));
+        existingRecord.entry = entry;
     });
 
-    return marker;
+    Array.from(markers.entries()).forEach(([markerKey, record]) => {
+        if (nextIds.has(markerKey)) {
+            return;
+        }
+
+        if (record.marker?.__trackingAnimationFrame) {
+            cancelAnimationFrame(record.marker.__trackingAnimationFrame);
+        }
+
+        trackState.mapState.map.removeLayer(record.marker);
+        markers.delete(markerKey);
+    });
+
+    if (!validEntries.length) {
+        return null;
+    }
+
+    const primaryKey = String(validEntries[0].deliveryId || validEntries[0].orderId || 0);
+    const primaryRecord = markers.get(primaryKey) || null;
+    const positions = validEntries.map((entry) => [entry.latitude, entry.longitude]);
+
+    if (positions.length === 1) {
+        if (!orderTrackingMapBoundsInitialized) {
+            trackState.mapState.map.setView(positions[0], 14, {
+                animate: true,
+                duration: 0.6
+            });
+            orderTrackingMapBoundsInitialized = true;
+        } else if (shouldRecenterTrackingMap(trackState.mapState.map, positions[0][0], positions[0][1])) {
+            trackState.mapState.map.panTo(positions[0], {
+                animate: true,
+                duration: 0.6
+            });
+        }
+    } else {
+        const bounds = L.latLngBounds(positions);
+        if (!orderTrackingMapBoundsInitialized || shouldRefitTrackingBounds(trackState.mapState.map, positions)) {
+            trackState.mapState.map.fitBounds(bounds, {
+                padding: [40, 40]
+            });
+            orderTrackingMapBoundsInitialized = true;
+        }
+    }
+
+    trackState.mapState.marker = primaryRecord?.marker || null;
+    return primaryRecord?.marker || null;
 }
 
 function setOrderTrackingStatus(message) {
@@ -732,21 +926,292 @@ function setOrderTrackingStatus(message) {
     }
 }
 
-async function setupTrackPageSocket(orderId, mapState) {
-    if (!window.socketClient || typeof window.socketClient.connect !== 'function') {
+function setOrderTrackingConnectionStatus(message) {
+    const status = document.getElementById('orderTrackingConnectionStatus');
+    if (status) {
+        status.textContent = message;
+    }
+}
+
+function formatTrackingTime(value) {
+    if (!value) {
+        return 'recently';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return 'recently';
+    }
+
+    return date.toLocaleTimeString();
+}
+
+function clearTrackOrderRuntime() {
+    if (trackOrderPollingInterval) {
+        clearInterval(trackOrderPollingInterval);
+        trackOrderPollingInterval = null;
+    }
+
+    if (trackOrderSocketStatusCleanup) {
+        trackOrderSocketStatusCleanup();
+        trackOrderSocketStatusCleanup = null;
+    }
+
+    if (window.socketClient && typeof window.socketClient.off === 'function') {
+        trackOrderSocketCleanup.forEach(({ event, handler }) => {
+            window.socketClient.off(event, handler);
+        });
+    }
+
+    if (activeTrackOrderState?.mapState?.markers && activeTrackOrderState.mapState.map) {
+        activeTrackOrderState.mapState.markers.forEach(({ marker }) => {
+            if (marker?.__trackingAnimationFrame) {
+                cancelAnimationFrame(marker.__trackingAnimationFrame);
+            }
+            activeTrackOrderState.mapState.map.removeLayer(marker);
+        });
+        activeTrackOrderState.mapState.markers.clear();
+    }
+
+    trackOrderSocketCleanup = [];
+    activeTrackOrderState = null;
+    orderTrackingMapBoundsInitialized = false;
+}
+
+function updateTrackPageOrderSummary(order) {
+    if (!order) {
         return;
     }
 
-    window.socketClient.connect();
-    window.socketClient.on('driverLocationUpdated', (payload) => {
-        if (!payload || Number(payload.orderId) !== Number(orderId)) {
+    document.getElementById('trackingOrderReference').textContent = `#${order.id}`;
+    document.getElementById('trackingOrderStatus').textContent = order.status;
+    document.getElementById('trackingOrderTotal').textContent = order.total != null ? formatKsh(order.total) : 'N/A';
+    document.getElementById('trackingOrderAddress').textContent = order.delivery_address || 'Not available';
+    document.getElementById('trackingOrderDate').textContent = formatDateTime(order.created_at);
+    document.getElementById('trackingOrderPayment').textContent = order.payment_in_progress
+        ? `Payment pending - completes by ${formatDateTime(order.payment_expires_at)}`
+        : (order.paid_at
+            ? `Paid at ${formatDateTime(order.paid_at)}`
+            : (order.status === 'paid' ? 'Paid' : 'Not paid yet'));
+    document.getElementById('trackingDriverId').textContent = order.delivery_name || (order.delivery_id ? `Driver #${order.delivery_id}` : 'Not assigned');
+    document.getElementById('trackingOrderItems').innerHTML = (order.items || []).map((item) => `
+        <li>${item.product_name} x${item.quantity} - ${formatKsh((item.price || 0) * item.quantity)}</li>
+    `).join('');
+}
+
+function applyTrackPageLocationPayload(trackState, locationPayload = {}, source = 'api') {
+    if (!trackState || !trackState.mapState) {
+        return;
+    }
+
+    const order = trackState.order;
+    const location = locationPayload.location || null;
+    const trackingEntries = getTrackingEntries(trackState, locationPayload);
+
+    if (locationPayload.deliveryName && trackState.order) {
+        trackState.order.delivery_name = locationPayload.deliveryName;
+        customerOrdersCache[trackState.order.id] = trackState.order;
+        document.getElementById('trackingDriverId').textContent = locationPayload.deliveryName;
+    }
+
+    if (trackingEntries.length) {
+        syncTrackedPersonnelMarkers(trackState, trackingEntries);
+        setOrderTrackingStatus(
+            `${source === 'socket' ? 'Driver live location updated' : 'Driver last seen'} at ${formatTrackingTime(trackingEntries[0].locationTime)}`
+        );
+        return;
+    }
+
+    if (isOrderTrackable(order)) {
+        setOrderTrackingStatus('Driver assigned, live location will appear once the driver starts moving.');
+        return;
+    }
+
+    if (canViewOrderProgress(order)) {
+        setOrderTrackingStatus('Live tracking will start automatically once the driver is on the way.');
+        return;
+    }
+
+    setOrderTrackingStatus('Tracking is not available for this order.');
+}
+
+function finalizeTrackPageForClosedOrder(trackState) {
+    if (!trackState || !trackState.order) {
+        return;
+    }
+
+        if (trackState.order.status === 'delivered') {
+            setOrderTrackingStatus('Order delivered. Live tracking has ended.');
+            setOrderTrackingConnectionStatus('Live updates ended for this order.');
+    } else if (trackState.order.status === 'cancelled') {
+        setOrderTrackingStatus('Order cancelled. Live tracking has ended.');
+        setOrderTrackingConnectionStatus('Live updates ended for this order.');
+    }
+}
+
+async function refreshTrackOrderData(trackState, options = {}) {
+    if (!trackState || trackState.refreshInFlight) {
+        return;
+    }
+
+    const {
+        refreshOrder = true,
+        refreshLocation = true,
+        source = 'poll'
+    } = options;
+
+    trackState.refreshInFlight = true;
+
+    try {
+        if (refreshOrder) {
+            const orderResponse = await api.getOrder(trackState.orderId);
+            if (orderResponse && orderResponse.data) {
+                trackState.order = orderResponse.data;
+                customerOrdersCache[trackState.order.id] = trackState.order;
+                updateTrackPageOrderSummary(trackState.order);
+            }
+        }
+
+        if (!canViewOrderProgress(trackState.order)) {
+            finalizeTrackPageForClosedOrder(trackState);
+            clearTrackOrderRuntime();
             return;
         }
 
-        setOrderTrackingStatus(`Driver live location updated at ${new Date(payload.locationTime).toLocaleTimeString()}`);
-        mapState.marker = updateOrderTrackingMap(mapState.map, mapState.marker, payload.latitude, payload.longitude);
-    });
+        if (!refreshLocation) {
+            return;
+        }
+
+        const locationResponse = await api.getOrderLocation(trackState.orderId);
+        applyTrackPageLocationPayload(trackState, locationResponse.data || {}, source);
+    } finally {
+        trackState.refreshInFlight = false;
+    }
 }
+
+function startTrackOrderPolling(trackState) {
+    if (trackOrderPollingInterval) {
+        clearInterval(trackOrderPollingInterval);
+    }
+
+    trackOrderPollingInterval = setInterval(async () => {
+        try {
+            await refreshTrackOrderData(trackState, {
+                refreshOrder: true,
+                refreshLocation: true,
+                source: 'poll'
+            });
+        } catch (error) {
+            console.warn('Track order polling failed:', error.message || error);
+            setOrderTrackingConnectionStatus(`Live updates retrying. Refreshing every ${TRACK_ORDER_POLL_INTERVAL_MS / 1000} seconds.`);
+        }
+    }, TRACK_ORDER_POLL_INTERVAL_MS);
+}
+
+async function setupTrackPageSocket(trackState) {
+    if (!window.socketClient || typeof window.socketClient.connect !== 'function') {
+        setOrderTrackingConnectionStatus(`Live updates unavailable. Refreshing every ${TRACK_ORDER_POLL_INTERVAL_MS / 1000} seconds.`);
+        return;
+    }
+
+    if (trackOrderSocketStatusCleanup) {
+        trackOrderSocketStatusCleanup();
+        trackOrderSocketStatusCleanup = null;
+    }
+
+    if (window.socketClient && typeof window.socketClient.off === 'function') {
+        trackOrderSocketCleanup.forEach(({ event, handler }) => {
+            window.socketClient.off(event, handler);
+        });
+    }
+    trackOrderSocketCleanup = [];
+
+    if (typeof window.socketClient.onStatusChange === 'function') {
+        trackOrderSocketStatusCleanup = window.socketClient.onStatusChange((status) => {
+            if (!status || !status.message) {
+                return;
+            }
+
+            if (status.state === 'connected') {
+                setOrderTrackingConnectionStatus(status.message);
+                return;
+            }
+
+            if (status.state === 'idle' || status.state === 'connecting') {
+                setOrderTrackingConnectionStatus('Connecting to live updates...');
+                return;
+            }
+
+            if (status.state === 'unauthorized') {
+                setOrderTrackingConnectionStatus(status.message);
+                return;
+            }
+
+            setOrderTrackingConnectionStatus(`${status.message} Polling every ${TRACK_ORDER_POLL_INTERVAL_MS / 1000} seconds.`);
+        });
+    }
+
+    window.socketClient.connect();
+
+    const driverLocationHandler = (payload) => {
+        if (!payload || Number(payload.orderId) !== Number(trackState.orderId)) {
+            return;
+        }
+
+        applyTrackPageLocationPayload(trackState, {
+            deliveryName: payload.deliveryName || trackState.order?.delivery_name || null,
+            deliveryId: payload.deliveryId || trackState.order?.delivery_id || null,
+            orderId: payload.orderId || trackState.orderId,
+            trackingStatus: payload.trackingStatus || null,
+            statusLabel: payload.statusLabel || null,
+            etaLabel: payload.etaLabel || null,
+            assignedDestination: payload.assignedDestination || trackState.order?.delivery_address || null,
+            trackedPersonnel: payload.trackedPersonnel || null,
+            location: payload.latitude != null && payload.longitude != null ? {
+                latitude: payload.latitude,
+                longitude: payload.longitude,
+                locationTime: payload.locationTime
+            } : null
+        }, 'socket');
+    };
+
+    const orderStatusHandler = async (payload) => {
+        if (!payload || Number(payload.orderId) !== Number(trackState.orderId)) {
+            return;
+        }
+
+        trackState.order = {
+            ...(trackState.order || {}),
+            status: payload.status,
+            delivery_id: payload.deliveryId || trackState.order?.delivery_id || null
+        };
+        customerOrdersCache[trackState.order.id] = trackState.order;
+        updateTrackPageOrderSummary(trackState.order);
+
+        try {
+            await refreshTrackOrderData(trackState, {
+                refreshOrder: true,
+                refreshLocation: true,
+                source: 'status'
+            });
+        } catch (error) {
+            console.warn('Track order status refresh failed:', error.message || error);
+        }
+    };
+
+    window.socketClient.on('driverLocationUpdated', driverLocationHandler);
+    trackOrderSocketCleanup.push({ event: 'driverLocationUpdated', handler: driverLocationHandler });
+    window.socketClient.on('orderStatusUpdated', orderStatusHandler);
+    trackOrderSocketCleanup.push({ event: 'orderStatusUpdated', handler: orderStatusHandler });
+}
+
+window.addEventListener('beforeunload', () => {
+    clearTrackOrderRuntime();
+    if (orderTrackingMapInstance && typeof orderTrackingMapInstance.remove === 'function') {
+        orderTrackingMapInstance.remove();
+        orderTrackingMapInstance = null;
+    }
+});
 
 async function loadTrackOrderPage() {
     const params = new URLSearchParams(window.location.search);
@@ -776,46 +1241,53 @@ async function loadTrackOrderPage() {
             customerOrdersCache[order.id] = order;
         }
 
-        document.getElementById('trackingOrderReference').textContent = `#${order.id}`;
-        document.getElementById('trackingOrderStatus').textContent = order.status;
-        document.getElementById('trackingOrderTotal').textContent = order.total != null ? formatKsh(order.total) : 'N/A';
-        document.getElementById('trackingOrderAddress').textContent = order.delivery_address || 'Not available';
-        document.getElementById('trackingOrderDate').textContent = formatDateTime(order.created_at);
-        document.getElementById('trackingOrderPayment').textContent = order.payment_in_progress
-            ? `Payment pending — completes by ${formatDateTime(order.payment_expires_at)}`
-            : (order.paid_at
-                ? `Paid at ${formatDateTime(order.paid_at)}`
-                : (order.status === 'paid' ? 'Paid' : 'Not paid yet'));
-        document.getElementById('trackingDriverId').textContent = order.delivery_name || (order.delivery_id ? `Driver #${order.delivery_id}` : 'Not assigned');
-        document.getElementById('trackingOrderItems').innerHTML = (order.items || []).map((item) => `
-            <li>${item.product_name} x${item.quantity} — ${formatKsh((item.price || 0) * item.quantity)}</li>
-        `).join('');
+        if (!canViewOrderProgress(order)) {
+            renderTrackPageUnavailable('Tracking is not available for this order yet.');
+            return;
+        }
 
-        const mapState = {
-            map: await initializeOrderTrackingMap(),
-            marker: null
+        updateTrackPageOrderSummary(order);
+
+        clearTrackOrderRuntime();
+        activeTrackOrderState = {
+            orderId,
+            order,
+            mapState: {
+                map: null,
+                marker: null,
+                markers: new Map()
+            },
+            refreshInFlight: false
         };
 
-        setOrderTrackingStatus('Loading latest driver location...');
+        await new Promise((resolve) => {
+            setTimeout(() => {
+                activeTrackOrderState.mapState.map = initMap();
+                if (activeTrackOrderState.mapState.map && typeof activeTrackOrderState.mapState.map.invalidateSize === 'function') {
+                    activeTrackOrderState.mapState.map.invalidateSize();
+                }
+                resolve();
+            }, 100);
+        });
 
-        const locationResponse = await api.getOrderLocation(orderId);
-        const locationPayload = locationResponse.data || {};
-        const location = locationPayload.location;
-
-        if (!order.delivery_name && locationPayload.deliveryName) {
-            document.getElementById('trackingDriverId').textContent = locationPayload.deliveryName;
+        if (!activeTrackOrderState.mapState.map) {
+            setOrderTrackingStatus('Live location is available, but the map could not be displayed on this device.');
         }
 
-        if (location && location.latitude !== null && location.longitude !== null) {
-            mapState.marker = updateOrderTrackingMap(mapState.map, mapState.marker, location.latitude, location.longitude);
-            setOrderTrackingStatus(`Driver last seen at ${new Date(location.locationTime).toLocaleTimeString()}`);
-        } else if (order.delivery_id) {
-            setOrderTrackingStatus('Driver assigned, live location will appear once the driver starts moving.');
-        } else {
-            setOrderTrackingStatus('No driver has been assigned yet. Please wait for assignment.');
-        }
+        setOrderTrackingStatus(
+            isOrderTrackable(order)
+                ? 'Loading latest driver location...'
+                : 'Preparing live order progress...'
+        );
+        setOrderTrackingConnectionStatus('Connecting to live updates...');
 
-        await setupTrackPageSocket(orderId, mapState);
+        await refreshTrackOrderData(activeTrackOrderState, {
+            refreshOrder: false,
+            refreshLocation: true,
+            source: 'api'
+        });
+        await setupTrackPageSocket(activeTrackOrderState);
+        startTrackOrderPolling(activeTrackOrderState);
     } catch (error) {
         console.error('Failed to load tracking page:', error);
         renderTrackPageUnavailable('Unable to load live tracking for this order at the moment.');

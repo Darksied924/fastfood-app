@@ -497,6 +497,55 @@ const getDeliveryPersonnel = asyncHandler(async (req, res) => {
 
 const SALES_STATUSES = ['paid', 'preparing', 'out_for_delivery', 'delivered'];
 const SALES_STATUSES_SQL = SALES_STATUSES.map((status) => `'${status}'`).join(', ');
+const TRACKING_STALE_THRESHOLD_MS = 4 * 60 * 1000;
+
+const getTrackingStatusMeta = (order, location = null) => {
+  const orderStatus = String(order?.status || '').toLowerCase();
+
+  if (orderStatus === 'delivered') {
+    return { code: 'arrived', label: 'Arrived', etaLabel: 'Arrived', etaMinutes: 0 };
+  }
+
+  if (orderStatus === 'cancelled') {
+    return { code: 'cancelled', label: 'Cancelled', etaLabel: 'Unavailable', etaMinutes: null };
+  }
+
+  if (orderStatus !== 'out_for_delivery') {
+    return { code: 'awaiting_dispatch', label: 'Awaiting dispatch', etaLabel: 'Dispatch pending', etaMinutes: null };
+  }
+
+  if (!location?.locationTime) {
+    return { code: 'en_route', label: 'En route', etaLabel: 'ETA updating live', etaMinutes: null };
+  }
+
+  const locationTime = new Date(location.locationTime);
+  const locationTimeMs = locationTime.getTime();
+  const ageMs = Number.isFinite(locationTimeMs) ? Date.now() - locationTimeMs : 0;
+
+  if (Number.isFinite(ageMs) && ageMs > TRACKING_STALE_THRESHOLD_MS) {
+    return { code: 'delayed', label: 'Delayed', etaLabel: 'ETA delayed', etaMinutes: null };
+  }
+
+  return { code: 'en_route', label: 'En route', etaLabel: 'ETA updating live', etaMinutes: null };
+};
+
+const buildTrackedPersonnelPayload = (order, location = null) => {
+  const trackingMeta = getTrackingStatusMeta(order, location);
+
+  return {
+    deliveryId: order.delivery_id || null,
+    deliveryName: order.delivery_name || null,
+    orderId: order.id,
+    status: trackingMeta.code,
+    statusLabel: trackingMeta.label,
+    etaLabel: trackingMeta.etaLabel,
+    etaMinutes: trackingMeta.etaMinutes,
+    assignedDestination: order.delivery_address || 'Not available',
+    latitude: location?.latitude ?? null,
+    longitude: location?.longitude ?? null,
+    locationTime: location?.locationTime || null
+  };
+};
 
 const normalizeDate = (value) => {
   if (!value) return null;
@@ -1473,7 +1522,7 @@ const getDeliveryLocation = asyncHandler(async (req, res) => {
 const getOrderLocation = asyncHandler(async (req, res) => {
   const orderId = Number(req.params.id);
   const orders = await db.query(
-    `SELECT o.id, o.user_id, o.delivery_id, o.status, d.name AS delivery_name
+    `SELECT o.id, o.user_id, o.delivery_id, o.status, o.delivery_address, d.name AS delivery_name
      FROM orders o
      LEFT JOIN users d ON o.delivery_id = d.id
      WHERE o.id = ?`,
@@ -1501,17 +1550,31 @@ const getOrderLocation = asyncHandler(async (req, res) => {
       orderStatus: order.status,
       deliveryId: null,
       deliveryName: null,
+      trackingStatus: 'awaiting_dispatch',
+      statusLabel: 'Awaiting dispatch',
+      etaLabel: 'Dispatch pending',
+      assignedDestination: order.delivery_address || 'Not available',
+      trackedPersonnel: [],
       location: null
     });
   }
 
   const location = await locationService.getDriverLocation(order.delivery_id);
+  const normalizedLocation = location && Number(location.orderId) === Number(order.id) ? location : null;
+  const trackedPersonnel = [
+    buildTrackedPersonnelPayload(order, normalizedLocation)
+  ];
   const payload = {
     orderId: order.id,
     orderStatus: order.status,
     deliveryId: order.delivery_id,
     deliveryName: order.delivery_name || null,
-    location: location || null
+    trackingStatus: trackedPersonnel[0].status,
+    statusLabel: trackedPersonnel[0].statusLabel,
+    etaLabel: trackedPersonnel[0].etaLabel,
+    assignedDestination: trackedPersonnel[0].assignedDestination,
+    trackedPersonnel,
+    location: normalizedLocation
   };
 
   return successResponse(res, payload);
@@ -1534,12 +1597,41 @@ const updateDeliveryLocation = asyncHandler(async (req, res) => {
   }
 
   const result = await locationService.saveDriverLocation(deliveryId, latitude, longitude, orderId);
+  let trackedPersonnel = [];
+
+  if (result.orderId) {
+    const orders = await db.query(
+      `SELECT o.id, o.delivery_id, o.status, o.delivery_address, d.name AS delivery_name
+       FROM orders o
+       LEFT JOIN users d ON o.delivery_id = d.id
+       WHERE o.id = ?
+       LIMIT 1`,
+      [result.orderId]
+    );
+
+    if (orders.length) {
+      trackedPersonnel = [
+        buildTrackedPersonnelPayload(orders[0], {
+          latitude,
+          longitude,
+          locationTime: result.locationTime
+        })
+      ];
+    }
+  }
+
   const payload = {
     deliveryId,
     latitude,
     longitude,
     orderId: result.orderId,
-    locationTime: result.locationTime
+    locationTime: result.locationTime,
+    deliveryName: trackedPersonnel[0]?.deliveryName || null,
+    trackingStatus: trackedPersonnel[0]?.status || null,
+    statusLabel: trackedPersonnel[0]?.statusLabel || null,
+    etaLabel: trackedPersonnel[0]?.etaLabel || null,
+    assignedDestination: trackedPersonnel[0]?.assignedDestination || null,
+    trackedPersonnel
   };
 
   if (result.customerId) {

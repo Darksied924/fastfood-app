@@ -15,9 +15,31 @@ class LocationService {
         return rows.length ? rows[0] : null;
     }
 
+    async getTrackedOrderForDelivery(deliveryId, orderId = null) {
+        const normalizedOrderId = Number(orderId);
+
+        if (Number.isFinite(normalizedOrderId) && normalizedOrderId > 0) {
+            const rows = await db.query(
+                `SELECT id, user_id
+                 FROM orders
+                 WHERE id = ?
+                   AND delivery_id = ?
+                   AND status = 'out_for_delivery'
+                 LIMIT 1`,
+                [normalizedOrderId, deliveryId]
+            );
+
+            if (rows.length) {
+                return rows[0];
+            }
+        }
+
+        return this.getActiveOrderForDelivery(deliveryId);
+    }
+
     async saveDriverLocation(deliveryId, latitude, longitude, orderId = null) {
-        const activeOrder = await this.getActiveOrderForDelivery(deliveryId);
-        const persistedOrderId = orderId || (activeOrder ? activeOrder.id : null);
+        const trackedOrder = await this.getTrackedOrderForDelivery(deliveryId, orderId);
+        const persistedOrderId = trackedOrder ? trackedOrder.id : null;
 
         await db.query(
             `INSERT INTO driver_locations (delivery_id, order_id, latitude, longitude, location_time)
@@ -33,7 +55,7 @@ class LocationService {
 
         return {
             orderId: persistedOrderId,
-            customerId: activeOrder ? activeOrder.user_id : null,
+            customerId: trackedOrder ? trackedOrder.user_id : null,
             locationTime: new Date().toISOString().slice(0, 19).replace('T', ' ')
         };
     }

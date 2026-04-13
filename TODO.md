@@ -1,10 +1,11 @@
-# ✅ TASK COMPLETE: Move cancellation styles to style.css
-
-## Plan Steps:
-- [x] 1. Append cancellation styles to public/css/style.css
-- [x] 2. Remove cancellation-styles.css link from public/customer-orders.html  
-- [x] 3. Delete public/css/cancellation-styles.css ✓ (rm command executed, file read fails confirming deletion)
-- [x] 4. Verified: style.css updated with cancellation styles, HTML link removed, file deleted.
-
-All styles now centralized in style.css. customer-orders.html loads from single CSS file.
-
+# Schema Migration Fix TODO
+✅ 1. Create/update TODO.md (current)
+✅ 2. Edit schema-migrations.sql with all fixes
+   - ✅ Change INT UNSIGNED → INT (all FKs/PKs)
+   - ✅ Remove redundant ALTER orders status
+   - ✅ Add ON UPDATE CASCADE to FKs
+   - ✅ Remove duplicate INDEXes
+   - ✅ Remove verification SHOW/DESCRIBE
+✅#q7@H5fS 3. Test migration: Full DB recreate + run both schemas → success (no FK errors)
+✅ 4. Verify: Tables created, FKs correct, describes show INT types
+✅ 5. Complete task

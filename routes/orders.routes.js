@@ -34,6 +34,13 @@ router.post('/', userCreateOrderRateLimiter, createOrderValidator, validate, ord
 router.get('/my-orders', ordersController.getMyOrders);
 router.post('/:id/cancel', restrictTo('customer'), cancelOrderValidator, validate, orderCancellationController.cancelOrder);
 
+// Delivery routes
+router.get('/delivery/assigned', restrictTo('delivery'), ordersController.getAssignedOrders);
+router.get('/delivery/dashboard', restrictTo('delivery'), ordersController.getDeliveryDashboard);
+router.get('/delivery/location', restrictTo('delivery'), ordersController.getDeliveryLocation);
+router.patch('/delivery/location', restrictTo('delivery'), ordersController.updateDeliveryLocation);
+router.patch('/:id/delivered', restrictTo('delivery'), orderIdValidator, validate, ordersController.markAsDelivered);
+
 // Admin and Manager routes
 router.get('/', restrictTo('admin', 'manager'), ordersController.getAllOrders);
 router.get('/cancelled', restrictTo('admin', 'manager'), orderCancellationController.getCancelledOrders);
@@ -48,12 +55,5 @@ router.get('/:id', orderIdValidator, validate, ordersController.getOrder);
 
 router.patch('/:id/status', restrictTo('admin', 'manager'), updateOrderStatusValidator, validate, ordersController.updateOrderStatus);
 router.post('/:id/assign', restrictTo('admin', 'manager'), assignDeliveryValidator, validate, ordersController.assignDelivery);
-
-// Delivery routes
-router.get('/delivery/assigned', restrictTo('delivery'), ordersController.getAssignedOrders);
-router.get('/delivery/dashboard', restrictTo('delivery'), ordersController.getDeliveryDashboard);
-router.get('/delivery/location', restrictTo('delivery'), ordersController.getDeliveryLocation);
-router.patch('/delivery/location', restrictTo('delivery'), ordersController.updateDeliveryLocation);
-router.patch('/:id/delivered', restrictTo('delivery'), orderIdValidator, validate, ordersController.markAsDelivered);
 
 module.exports = router;

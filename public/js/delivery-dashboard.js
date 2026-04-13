@@ -22,6 +22,11 @@ let driverMarker = null;
 let locationWatchId = null;
 let lastSentLocation = null;
 
+function getActiveTrackedOrderId() {
+    const activeOrder = assignedOrdersCache.find((order) => order && order.status === 'out_for_delivery');
+    return activeOrder ? Number(activeOrder.id) : null;
+}
+
 function setLeafletDebugOverlay(message) {
     const overlay = document.getElementById('leafletDebugOverlay');
     if (!overlay) return;
@@ -121,7 +126,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await loadDashboard();
-    await loadDriverLocation();
     setupDeliverySocket();
     await setupDeliveryTracking();
     refreshTimer = setInterval(loadDashboard, 30000);
@@ -219,7 +223,7 @@ async function updateDeliveryMap(latitude, longitude) {
 }
 
 async function sendDriverLocation(latitude, longitude) {
-    const locationSignature = `${latitude.toFixed(5)},${longitude.toFixed(5)}`;
+    const locationSignature = `${latitude.toFixed(6)},${longitude.toFixed(6)}`;
     if (lastSentLocation === locationSignature) {
         return;
     }
@@ -227,27 +231,26 @@ async function sendDriverLocation(latitude, longitude) {
     lastSentLocation = locationSignature;
 
     try {
-        await api.updateDeliveryLocation({ latitude, longitude });
+        await api.updateDeliveryLocation({
+            latitude,
+            longitude,
+            orderId: getActiveTrackedOrderId()
+        });
     } catch (error) {
         console.warn('Driver location update failed:', error.message || error);
     }
 }
 
 async function setupDeliveryTracking() {
-    await initializeDeliveryMap();
-
     if (!navigator.geolocation) {
-        const statusNode = document.getElementById('deliveryLocationStatus');
-        if (statusNode) {
-            statusNode.textContent = 'Geolocation is not supported by this browser.';
-        }
+        console.warn('Geolocation is not supported by this browser.');
         return;
     }
 
     const options = {
         enableHighAccuracy: true,
-        maximumAge: 15000,
-        timeout: 15000
+        maximumAge: 5000,
+        timeout: 8000
     };
 
     locationWatchId = navigator.geolocation.watchPosition(
@@ -257,14 +260,9 @@ async function setupDeliveryTracking() {
             }
 
             const { latitude, longitude } = position.coords;
-            await updateDeliveryMap(latitude, longitude);
             await sendDriverLocation(latitude, longitude);
         },
         (error) => {
-            const statusNode = document.getElementById('deliveryLocationStatus');
-            if (statusNode) {
-                statusNode.textContent = `Location error: ${error.message || 'Unable to read location'}`;
-            }
             console.warn('Geolocation watch error:', error);
         },
         options
